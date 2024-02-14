@@ -1,0 +1,9 @@
+#include "civic.h"
+#include "coreio.h"
+
+export int main() {
+    fibs(scanInt());
+    printNewlines(1);
+    primes(scanInt());
+    return 0;
+}

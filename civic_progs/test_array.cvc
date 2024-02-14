@@ -1,0 +1,10 @@
+#include "civic.h"
+#include "array.h"
+
+export int main() {
+    // int[5] vec = [1, 2, 3, 4, 5];
+    // printIntVec(vec);
+    int[4, 4] mat = [[1,2,3,4], [1,2,3,4], [1,2,3,4], [1,2,3,4]];
+    printIntMat(mat);
+    return 0;
+}

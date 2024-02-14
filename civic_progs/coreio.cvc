@@ -1,0 +1,27 @@
+#include "civic.h"
+#include "core.h"
+
+export void fibs (int n) {
+    int fibnumber;
+    for (int i = 0, n) {
+        fibnumber = fib(i);
+        printInt(fibnumber);
+        printNewlines(1);
+    }
+}
+
+export void primes(int n) {
+    bool isprime(int n) {
+        if (n <= 1) return false;
+        for (int i = 2, n) {
+            if (n % i == 0) return false;
+        }
+        return true;
+    }
+    for (int num = 2, n + 1) {
+        if (isprime(num)) {
+            printInt(num);
+            printNewlines(1);
+        }
+    }
+}
