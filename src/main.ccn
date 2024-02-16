@@ -3,13 +3,41 @@ start phase RootPhase {
 
     actions {
         pass SPdoScanParse;
-        Demo;
+        IdentifierCount;
+        StrengthReduction;
+        ArithmeticCount;
         print;
     }
 };
 
 traversal Print {
     uid = PRT
+};
+
+
+traversal StrengthReduction {
+    uid = SR,
+    nodes = { Binop }
+};
+
+traversal ArithmeticCount {
+    uid = AC,
+    nodes = { Binop, Program },
+    travdata {
+        int plusCount,
+        int minusCount,
+        int mulCount,
+        int divCount,
+        int modCount
+    }
+};
+
+traversal IdentifierCount {
+    uid = IC,
+    nodes = { Var, VarLet },
+    travdata {
+        user htable_stptr identifierCounts
+    }
 };
 
 phase Demo {
@@ -60,6 +88,13 @@ nodeset Link = Expr | Stmt;
 root node Program {
     children {
         Stmts stmts { constructor, mandatory }
+    },
+    attributes {
+        int plusCount,
+        int minusCount,
+        int mulCount,
+        int divCount,
+        int modCount
     }
 };
 
