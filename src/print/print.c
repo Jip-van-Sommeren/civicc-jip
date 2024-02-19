@@ -284,6 +284,12 @@ node_st *PRTprogram(node_st *node)
   // Print the statements within the program
   TRAVopt(PROGRAM_STMTS(node));
 
+  printf("Arithmetic Operators Count:\n");
+  printf("+ : %d\n", PROGRAM_PLUSCOUNT(node));
+  printf("- : %d\n", PROGRAM_MINUSCOUNT(node));
+  printf("* : %d\n", PROGRAM_MULCOUNT(node));
+  printf("/ : %d\n", PROGRAM_DIVCOUNT(node));
+  printf("%% : %d\n", PROGRAM_MODCOUNT(node));
   // Continue traversal for any other children of the Program node, if necessary
   TRAVchildren(node);
   return node;

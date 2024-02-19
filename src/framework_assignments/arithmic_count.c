@@ -4,6 +4,8 @@
 #include "ccngen/enum.h"
 #include "ccngen/trav_data.h"
 
+node_st *ACprogram(node_st *node);
+
 void ACinit() { return; }
 
 void ACfini(node_st *root)

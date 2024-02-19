@@ -4,6 +4,8 @@
 #include "ccngen/trav.h"
 #include "ccngen/enum.h"
 #include "ccngen/trav_data.h"
+#include "stdio.h"
+#include "string.h"
 
 void ICinit(struct data_ic *data)
 {
