@@ -247,7 +247,10 @@ node_st *PRTmonop(node_st *node)
   case MO_neg:
     printf("-");
     break;
+  case MO_NULL:
+    DBUG_ASSERT(false, "unknown monop detected!");
   }
+
   TRAVopt(MONOP_OPERAND(node));
   return node;
 }
