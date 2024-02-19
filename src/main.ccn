@@ -3,9 +3,7 @@ start phase RootPhase {
 
     actions {
         pass SPdoScanParse;
-        IdentifierCount;
-        StrengthReduction;
-        ArithmeticCount;
+        Demo;
         print;
     }
 };
@@ -15,30 +13,30 @@ traversal Print {
 };
 
 
-traversal StrengthReduction {
-    uid = SR,
-    nodes = { Binop }
-};
+// traversal StrengthReduction {
+//     uid = SR,
+//     nodes = { Binop }
+// };
 
-traversal ArithmeticCount {
-    uid = AC,
-    nodes = { Binop, Program },
-    travdata {
-        int plusCount,
-        int minusCount,
-        int mulCount,
-        int divCount,
-        int modCount
-    }
-};
+// traversal ArithmeticCount {
+//     uid = AC,
+//     nodes = { Binop, Program },
+//     travdata {
+//         int plusCount,
+//         int minusCount,
+//         int mulCount,
+//         int divCount,
+//         int modCount
+//     }
+// };
 
-traversal IdentifierCount {
-    uid = IC,
-    nodes = { Var, VarLet },
-    travdata {
-        user htable_stptr identifierCounts
-    }
-};
+// traversal IdentifierCount {
+//     uid = IC,
+//     nodes = { Var, VarLet },
+//     travdata {
+//         user htable_stptr identifierCounts
+//     }
+// };
 
 phase Demo {
     actions {
@@ -79,9 +77,23 @@ enum BinOpType {
     }
 };
 
-nodeset Expr = {Num, Float, Bool, Binop, Var};
-nodeset Stmt = {Assign};
+nodeset Expr = {Num,
+    Float,
+    Bool,
+    Binop,
+    Var,
+    MonOp,
+    Const,
+    FunCallExpr};
 
+nodeset Stmt = {
+    If,
+    While,
+    For,
+    Return,
+    Assign,
+    Block
+};
 // Nodes you want to be able to link to from your symbol table.
 nodeset Link = Expr | Stmt;
 
@@ -111,6 +123,8 @@ node Assign {
         Expr expr { constructor, mandatory }
     }
 };
+
+
 
 node Binop {
     children {
@@ -159,5 +173,75 @@ node Float {
 node Bool {
     attributes {
         bool val { constructor }
+    }
+};
+
+node MonOp {
+    children {
+        Expr operand { constructor, mandatory }
+    },
+    attributes {
+        MonOpType op { constructor }
+    }
+};
+
+node Const {
+    attributes {
+        string value { constructor }
+    }
+};
+
+
+node FunCallExpr {
+    children {
+        ExprList arguments { constructor }
+    },
+    attributes {
+        string functionName { constructor }
+    }
+};
+
+node ExprList {
+    children {
+        Expr expression { constructor, mandatory },
+        ExprList next { constructor }
+    }
+};
+
+node If {
+    children {
+        Expr condition { constructor, mandatory },
+        Stmt thenBranch { constructor, mandatory },
+        Stmt elseBranch { constructor }
+    }
+};
+
+node While {
+    children {
+        Expr condition { constructor, mandatory },
+        Stmt body { constructor, mandatory }
+    }
+};
+
+node For {
+    children {
+        Assign init { constructor },
+        Expr condition { constructor, mandatory },
+        Assign update { constructor },
+        Stmt body { constructor, mandatory }
+    }
+};
+
+node Return {
+    children {
+        Expr returnValue { constructor }
+    }
+};
+
+
+
+node Block {
+    children {
+        Stmt statements { constructor }
     }
 };
