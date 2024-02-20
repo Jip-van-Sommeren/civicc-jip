@@ -13,23 +13,6 @@
 #include "palm/dbug.h"
 
 /**
- * @fn PRTprogram
- */
-// node_st *PRTprogram(node_st *node)
-// {
-//   TRAVs(node);
-//   printf("Arithmetic Operators Count:\n");
-//   printf("+ : %d\n", PROGRAM_PLUSCOUNT(node));
-//   printf("- : %d\n", PROGRAM_MINUSCOUNT(node));
-//   printf("* : %d\n", PROGRAM_MULCOUNT(node));
-//   printf("/ : %d\n", PROGRAM_DIVCOUNT(node));
-//   printf("%% : %d\n", PROGRAM_MODCOUNT(node));
-
-//   TRAVchildren(node);
-//   return node;
-// }
-
-/**
  * @fn PRTstmts
  */
 node_st *PRTstmts(node_st *node)
