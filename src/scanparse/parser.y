@@ -27,6 +27,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
  float               cflt;
  enum BinOpType     cbinop;
  enum MonOpType     cmonop;
+ enum Type           ctype;
  node_st             *node;
 }
 
@@ -36,6 +37,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %token MINUS PLUS STAR SLASH PERCENT LE LT GE GT EQ NE OR AND
 %token NOT NEG
 %token TRUEVAL FALSEVAL LET
+%token INT_TYPE FLOAT_TYPE BOOL_TYPE VOID_TYPE
 
 %token <cint> NUM
 %token <cflt> FLOAT
@@ -45,15 +47,46 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %type <node> stmts stmt assign varlet program
 %type <cbinop> binop
 %type <cmonop> monop
+%type <ctype> dtype
+%type <node> decls decl globdecl
+
 
 %start program
 
 %%
 
-program: stmts
+
+program: decls
          {
            parseresult = ASTprogram($1);
          }
+         | stmts
+         {
+           parseresult = ASTprogram($1);
+         }
+         ;
+
+decls: decl decls
+       {
+         $$ = ASTdecls($1, $2);
+       }
+     | decl
+       {
+         $$ = ASTdecls($1, NULL);
+       }
+     ;
+
+decl: globdecl
+        {
+          $$ = $1;
+        }
+      ;
+
+globdecl: dtype ID[name] SEMICOLON
+          {
+            $$ = ASTglobdecl($name, $1);
+            AddLocToNode($$, &@1, &@name);
+          }
          ;
 
 stmts: stmt stmts
@@ -159,6 +192,13 @@ binop: PLUS      { $$ = BO_add; }
 monop: NOT { $$ = MO_not; }
      | NEG { $$ = MO_neg; }
      ;
+
+dtype: INT_TYPE { $$ = CT_int; }
+     | FLOAT_TYPE { $$ = CT_float; }
+     | BOOL_TYPE { $$ = CT_bool; }
+     | VOID_TYPE { $$ = CT_void; }
+     ;
+
 %%
 
 void AddLocToNode(node_st *node, void *begin_loc, void *end_loc)

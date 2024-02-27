@@ -64,6 +64,11 @@ int yycolumn = 1;
 "true"                     { FILTER( TRUEVAL); }
 "false"                    { FILTER( FALSEVAL); }
 
+"int"                       { FILTER( INT_TYPE); }
+"float"                       { FILTER( FLOAT_TYPE); }
+"bool"                       { FILTER( BOOL_TYPE); }
+"void"                       { FILTER( VOID_TYPE); }
+
 [A-Za-z][A-Za-z0-9_]*      { yylval.id = STRcpy(yytext);
                              FILTER( ID);
                            }
