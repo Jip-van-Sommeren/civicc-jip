@@ -26,6 +26,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
  int                 cint;
  float               cflt;
  enum BinOpType     cbinop;
+ enum MonOpType     cmonop;
  node_st             *node;
 }
 
@@ -33,6 +34,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 
 %token BRACKET_L BRACKET_R COMMA SEMICOLON
 %token MINUS PLUS STAR SLASH PERCENT LE LT GE GT EQ NE OR AND
+%token NOT NEG
 %token TRUEVAL FALSEVAL LET
 
 %token <cint> NUM
@@ -42,6 +44,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %type <node> intval floatval boolval constant expr
 %type <node> stmts stmt assign varlet program
 %type <cbinop> binop
+%type <cmonop> monop
 
 %start program
 
@@ -96,6 +99,11 @@ expr: constant
         $$ = ASTbinop( $left, $right, $type);
         AddLocToNode($$, &@left, &@right);
       }
+    | monop[type] expr[right]
+      {
+        $$ = ASTunop($type, $right);
+        AddLocToNode($$, &@type, &@right);
+      }
     ;
 
 constant: floatval
@@ -148,6 +156,9 @@ binop: PLUS      { $$ = BO_add; }
      | AND       { $$ = BO_and; }
      ;
 
+monop: NOT { $$ = MO_not; }
+     | NEG { $$ = MO_neg; }
+     ;
 %%
 
 void AddLocToNode(node_st *node, void *begin_loc, void *end_loc)

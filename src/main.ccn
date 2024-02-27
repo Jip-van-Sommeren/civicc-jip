@@ -1,12 +1,12 @@
-start phase RootPhase {
-    info = "Denotes the entry point of your compiler",
+/*****************************************************************************
+ *                                                                           *
+ *                                   PHASES                                  *
+ *                                                                           *
+ *****************************************************************************/
 
+start phase RootPhase {
     actions {
         pass SPdoScanParse;
-        Demo;
-        StrengthReduction;
-        ArithmeticCount;
-        IdentifierCount;
         print;
     }
 };
@@ -15,55 +15,19 @@ traversal Print {
     uid = PRT
 };
 
+/*****************************************************************************
+ *                                                                           *
+ *                                   ENUMS                                   *
+ *                                                                           *
+ *****************************************************************************/
 
-traversal StrengthReduction {
-    uid = SR,
-    nodes = { Binop }
-};
-
-traversal ArithmeticCount {
-    uid = AC,
-    nodes = { Binop, Program },
-    travdata {
-        int plusCount,
-        int minusCount,
-        int mulCount,
-        int divCount,
-        int modCount
+enum Type {
+    // T_ collides with bison/flex generated stuff.
+    prefix = CT,
+    values {
+        int, float, bool, void
     }
 };
-
-traversal IdentifierCount {
-    uid = IC,
-    nodes = { Var, VarLet },
-    travdata {
-        user htable_stptr identifierCounts
-    }
-};
-
-phase Demo {
-    actions {
-        traversal RenameIdentifiers {
-            uid = RI,
-            nodes = { Var, VarLet }
-        };
-
-        traversal SumInts {
-            uid = SI,
-            nodes = { Stmts, Num },
-            travdata {
-                int sum
-            }
-        };
-
-        traversal OptSubstraction {
-            uid = OS,
-            nodes = { Binop }
-        };
-    }
-};
-
-/*** AST ***/
 
 enum MonOpType {
     prefix = MO,
@@ -80,36 +44,232 @@ enum BinOpType {
     }
 };
 
-nodeset Expr = {Num,
-    Float,
-    Bool,
-    Binop,
-    Var,
-    MonOp,
-    Const,
-    FunCallExpr};
+/*****************************************************************************
+ *                                                                           *
+ *                                  NODESETS                                 *
+ *                                                                           *
+ *****************************************************************************/
 
-nodeset Stmt = {
-    If,
-    While,
-    For,
-    Return,
-    Assign,
-    Block
+nodeset Constants = {Float, Bool, Num};
+
+nodeset Operations = {Binop, Monop};
+
+nodeset Decl = {GlobDef, GlobDecl, FunDef};
+
+nodeset Vars = {VarDecl, Var, VarLet};
+
+nodeset Expr = {Cast, FunCall, Var, ArrExpr} | (Constants | Operations);
+
+nodeset Stmt = {Assign, ExprStmt, IfElse, While, DoWhile, For, Return};
+
+nodeset Named {
+    nodes = Vars | (Decl | {FunCall, Param, Ids}),
+    attributes {
+        string name
+    }
 };
-// Nodes you want to be able to link to from your symbol table.
-nodeset Link = Expr | Stmt;
+
+nodeset Typed {
+    nodes = Vars | (Decl | (Operations | {Cast, FunCall, Param, Return})),
+    attributes {
+        Type type
+    }
+};
+
+// Link you need to adapt when working with the symbol tables.
+// I put it as a decl now, because an empty nodeset is not allowed.
+nodeset Link = Decl;
+
+nodeset Linked {
+    nodes = {FunCall, Var, VarLet},
+    attributes {
+        Link decl
+    }
+};
+
+/*****************************************************************************
+ *                                                                           *
+ *                                    NODES                                  *
+ *                                                                           *
+ *****************************************************************************/
 
 root node Program {
     children {
-        Stmts stmts { constructor, mandatory }
+        Decls decls { constructor, mandatory }
+    }
+};
+
+node Decls {
+    children {
+        Decl decl { constructor, mandatory },
+        Decls next { constructor }
+    }
+};
+
+node Exprs {
+    children {
+        Expr expr { constructor, mandatory },
+        Exprs next { constructor }
+    }
+};
+
+node ArrExpr {
+    children {
+        Exprs exprs { constructor, mandatory }
+    }
+};
+
+node Ids {
+    children {
+        Ids next
     },
+
     attributes {
-        int plusCount,
-        int minusCount,
-        int mulCount,
-        int divCount,
-        int modCount
+        string name { constructor }
+    }
+};
+
+node ExprStmt {
+    children {
+        Expr expr { constructor, mandatory }
+    }
+};
+
+node Return {
+    children {
+        Expr expr
+    }
+};
+
+node FunCall {
+    children {
+        Exprs fun_args
+    },
+
+    attributes {
+        string name { constructor }
+    }
+};
+
+node Cast {
+    children {
+        Expr expr {constructor, mandatory }
+    },
+
+    attributes {
+        Type type { constructor }
+    }
+};
+
+node FunDefs {
+    children {
+        FunDef fundef { constructor, mandatory },
+        FunDefs next
+    }
+};
+
+node FunDef {
+    children {
+        FunBody body,
+        Param params
+    },
+
+    attributes {
+        string name { constructor },
+        Type type { constructor },
+        bool export
+    }
+};
+
+node FunBody {
+    children {
+        VarDecl decls,
+        FunDefs local_fundefs,
+        Stmts stmts
+    }
+};
+
+node IfElse {
+    children {
+        Expr cond { constructor, mandatory },
+        Stmts then,
+        Stmts else_block
+    }
+};
+
+node While {
+    children {
+        Expr cond { constructor, mandatory },
+        Stmts block
+    }
+};
+
+node DoWhile {
+    children {
+        Expr cond { constructor, mandatory },
+        Stmts block
+    }
+};
+
+node For {
+    children {
+        Expr start_expr { constructor, mandatory },
+        Expr stop { constructor, mandatory },
+        Expr step,
+        Stmts block
+    },
+
+    attributes {
+        string var
+    }
+};
+
+node GlobDecl {
+    children {
+        Ids dims
+    },
+
+    attributes {
+        string name { constructor },
+        Type type { constructor }
+    }
+};
+
+node GlobDef {
+    children {
+        Exprs dims,
+        Expr init
+    },
+
+    attributes {
+        string name { constructor },
+        Type type { constructor },
+        bool export
+    }
+};
+
+node Param {
+    children {
+        Ids dims,
+        Param next
+    },
+
+    attributes {
+        string name { constructor },
+        Type type { constructor }
+    }
+};
+
+node VarDecl {
+    children {
+        Exprs dims,
+        Expr init,
+        VarDecl next
+    },
+
+    attributes {
+        string name { constructor },
+        Type type { constructor }
     }
 };
 
@@ -127,8 +287,6 @@ node Assign {
     }
 };
 
-
-
 node Binop {
     children {
         Expr left { constructor, mandatory },
@@ -140,22 +298,31 @@ node Binop {
     }
 };
 
-nodeset Vars {
-    nodes = {VarLet, Var},
+node Monop {
+    children {
+        Expr operand { constructor, mandatory }
+    },
 
     attributes {
-        string name,
-        Link decl
+        MonOpType op { constructor }
     }
 };
 
 node VarLet {
+    children {
+        Exprs indices
+    },
+
     attributes {
-        string name { constructor }  // Repeat from nodeset to add constructor
+        string name { constructor }
     }
 };
 
 node Var {
+    children {
+        Exprs indices
+    },
+
     attributes {
         string name { constructor }
     }
@@ -176,75 +343,5 @@ node Float {
 node Bool {
     attributes {
         bool val { constructor }
-    }
-};
-
-node MonOp {
-    children {
-        Expr operand { constructor, mandatory }
-    },
-    attributes {
-        MonOpType op { constructor }
-    }
-};
-
-node Const {
-    attributes {
-        string value { constructor }
-    }
-};
-
-
-node FunCallExpr {
-    children {
-        ExprList arguments { constructor }
-    },
-    attributes {
-        string functionName { constructor }
-    }
-};
-
-node ExprList {
-    children {
-        Expr expression { constructor, mandatory },
-        ExprList next { constructor }
-    }
-};
-
-node If {
-    children {
-        Expr condition { constructor, mandatory },
-        Stmt thenBranch { constructor, mandatory },
-        Stmt elseBranch { constructor }
-    }
-};
-
-node While {
-    children {
-        Expr condition { constructor, mandatory },
-        Stmt body { constructor, mandatory }
-    }
-};
-
-node For {
-    children {
-        Assign init { constructor },
-        Expr condition { constructor, mandatory },
-        Assign update { constructor },
-        Stmt body { constructor, mandatory }
-    }
-};
-
-node Return {
-    children {
-        Expr returnValue { constructor }
-    }
-};
-
-
-
-node Block {
-    children {
-        Stmt statements { constructor }
     }
 };
