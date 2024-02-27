@@ -99,10 +99,10 @@ expr: constant
         $$ = ASTbinop( $left, $right, $type);
         AddLocToNode($$, &@left, &@right);
       }
-    | monop[type] expr[right]
+    | monop[type] expr[operand]
       {
-        $$ = ASTunop($type, $right);
-        AddLocToNode($$, &@type, &@right);
+        $$ = ASTmonop($operand, $type);
+        AddLocToNode($$, &@type, &@operand);
       }
     ;
 
