@@ -82,10 +82,10 @@ decl: globdecl
         }
       ;
 
-globdecl: dtype ID[name] SEMICOLON
+globdecl: dtype[type] ID[name] SEMICOLON
           {
-            $$ = ASTglobdecl($name, $1);
-            AddLocToNode($$, &@1, &@name);
+            $$ = ASTglobdecl($name, $type);
+            AddLocToNode($$, &@type, &@name);
           }
          ;
 

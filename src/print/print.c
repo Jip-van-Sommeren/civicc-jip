@@ -286,7 +286,26 @@ node_st *PRTfor(node_st *node)
  */
 node_st *PRTglobdecl(node_st *node)
 {
-    printf("Global Declaration: %s\n", GLOBDECL_NAME(node));
+    char *typeStr = "unknown";
+    switch (GLOBDECL_TYPE(node))
+    {
+    case CT_int:
+        typeStr = "int";
+        break;
+    case CT_float:
+        typeStr = "float";
+        break;
+    case CT_bool:
+        typeStr = "bool";
+        break;
+    case CT_void:
+        typeStr = "void";
+        break;
+    case CT_NULL:
+        DBUG_ASSERT(false, "unknown type detected!");
+        // Add cases for other types as necessary
+    }
+    printf("%s %s;\n", typeStr, GLOBDECL_NAME(node));
     // Assuming dims is an optional child
     TRAVopt(GLOBDECL_DIMS(node));
     printf(";\n");
