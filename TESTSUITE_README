@@ -1,0 +1,109 @@
+How to merge the testsuite into your codebase
+=============================================
+Copy the entire "test" directory into the root directory of the framework.
+The framework already contains a test directory for assignment 1, you can
+remove this.
+
+Types of tests
+==============
+
+The "test" directory has a number of subdirectories that group the tests into
+different types:
+- The "basic" directory contains tests that test the minimal requirements as
+  explained in the milestones and reference manual, without any extensions.
+- The "nested_funs" and "arrays" directories contain tests that test the
+  functionalities added by the corresponding extensions.
+
+The second nesting level of the test directory has four different formats:
+
+- check_success: Small tests that only check if your compiler exits with a 0
+  status code.
+
+- check_error: Small tests that only check if your compiler exits with a
+  non-zero status code.
+
+- functional: These are the important tests. Your compiler is used to compile a
+  program, which is then assembled and executed with the CiviC VM. The output
+  is compared to the expected output, which is in the corresponding .out file.
+
+- combined_*: This is a special type of functional test, which requires
+  multiple source files to be run at the same time, where one of the source
+  files contains a main function. This is used for testing external variables,
+  which requires a file that exports a variable and a file that imports that
+  variable.
+
+
+How to use the testsuite
+========================
+To run the testsuite, use ctest from within your build-debug directory.
+For example:
+build-debug/$ ctest
+^^^^^^^^^^^   ^^^^^
+(working dir  Shell command)
+runs all tests.
+
+To start you probably only want to run the basic tests without the extensions.
+You can use the -R flag for this.
+build-debug/$ ctest -R basic
+
+Want more output? Use --verbose
+build-debug/$ ctest --verbose
+
+etc. Read the man page for more info.
+
+The test suite is designed to be part of your workflow, for example:
+1. Implement a compiler feature (e.g., a set of grammar rules in your parser).
+2. Run "ctest --verbose".
+3. For the tests that fail, see if the printed output of your compiler helps
+   you to debug the program.
+4. If the output of ctest is insufficient, have a look at the source
+   files of the failed tests, add some print statements to your code, and try
+   to get your compiler to work with only those source files.
+5. When you have debugged a test case, run ctest again to verify that
+   the test now succeeds and that you have not broken any other tests.
+
+
+On a more global level, you should set the environment variable RUN_FUNCTIONAL
+to 1 when you have implemented the first version of your code generation phase,
+to enable tests that compare program output. To do this run ctest as:
+build-debug/$ RUN_FUNCTIONAL=1 ctest --verbose
+
+You can also pass extra command line arguments to your compiler by setting the
+environment variable CFLAGS. This can be useful for enabling/disabling
+features, such as optimizations. For example:
+build-debug/$ CFLAGS=--no-opt RUN_FUNCTIONAL=1 ctest --verbose
+
+
+FAQ
+===
+
+Q: "If a lot of tests fail, will I fail the assignment?"
+A: Obviously, the more tests succeed, the higher your grade is likely to be.
+   Some tests, however, are more important than others (e.g., functional tests
+   are important). Some features may also (unintendedly) have more test cases
+   than others. For example, when your parser does not support function
+   definitions yet, most tests will fail since almost all are wrapped in a
+   "void foo" function. We will try to look closely to exactly which tests fail
+   when evaluating your compilers, and not only to the number of failing tests.
+
+Q: "If all test succeed, will I get a 10?"
+A: You will probably get close, but we also review code quality. If your C
+   coding style is horrible, we will subtract points, even if all of the tests
+   succeed. Also note that we have a number of additional tests for edge cases
+   that are not distributed to the students.
+
+Q: "I have my own testsuite, should I switch to yours instead?"
+A: Using the testsuite is not mandatory. If you have a fancy automated
+   testsuite of your own that covers all input cases, then you can surely use
+   that. Do keep in mind that we will use our own test suite to evaluate your
+   compilers, so it is recommended to at run the testsuite at least once to see
+   if you missed anything.
+
+Q: "Should we extend the testsuite ourselves?"
+A: By all means, we encourage you to write more tests. It is very easy to add a
+   cvc/out file pair to the functional tests directory and it saves you the
+   work of having to run your compiler on separate test files manually after
+   each small change.
+
+Q: "Does the testsuite output look awesome with fancy terminal colors?"
+A: Yes :-)

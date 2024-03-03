@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
-CIVAS=${CIVAS-../bin/civas}
-CIVVM=${CIVVM-../bin/civvm}
-CIVCC=${CIVCC-../bin/civcc}
+if [[ -z "${TOOLCHAIN}" ]]; then
+    CIVRUN="$(command -v civrun)"
+    if [[ -z "${CIVRUN}" ]]; then
+        echo "Could not find toolchain directory in PATH, rerun ctest as:"
+        echo "TOOLCHAIN=<TOOLCHAIN_DIR> ctest"
+        echo "Where <TOOLCHAIN_DIR> is the directory where you installed the" \
+             "toolchain."
+        exit 1
+    fi
+    TOOLCHAIN="$(dirname "$CIVRUN")"
+fi
+
+CIVAS="${TOOLCHAIN}/civas"
+CIVVM="${TOOLCHAIN}/civvm"
 CFLAGS=${CFLAGS-}
-RUN_FUNCTIONAL=${RUN_FUNCTIONAL-1}
+RUN_FUNCTIONAL=${RUN_FUNCTIONAL-0}
 
 ALIGN=52
 
@@ -29,9 +40,9 @@ function check_output {
     total_tests=$((total_tests+1))
     printf "%-${ALIGN}s " $file:
 
-    if $CIVCC $CGLAGS -o tmp.s $file > tmp.out 2>&1 &&
-       $CIVAS tmp.s -o tmp.o > tmp.out 2>&1 &&
-       $CIVVM tmp.o > tmp.out 2>&1 &&
+    if "$CIVCC" $CGLAGS -o tmp.s $file > tmp.out 2>&1 &&
+       "$CIVAS" tmp.s -o tmp.o > tmp.out 2>&1 &&
+       "$CIVVM" tmp.o > tmp.out 2>&1 &&
        mv tmp.out tmp.res &&
        diff tmp.res $expect_file --side-by-side --ignore-space-change > tmp.out 2>&1
     then
@@ -72,8 +83,8 @@ function check_combined {
         ofile=${file%.*}.o
         ofiles="$ofiles $ofile"
 
-        if $CIVCC $CGLAGS -o $asfile $file > /dev/null 2>&1 &&
-           $CIVAS -o $ofile $asfile 2>&1
+        if "$CIVCC" $CGLAGS -o $asfile $file > /dev/null 2>&1 &&
+           "$CIVAS" -o $ofile $asfile 2>&1
         then
             compiled_files="$compiled_files `basename $file`"
         else
@@ -83,7 +94,7 @@ function check_combined {
 
     if [ $compiled -eq 1 ]
     then
-        if $CIVVM $ofiles > tmp.out 2>&1 &&
+        if "$CIVVM" $ofiles > tmp.out 2>&1 &&
            mv tmp.out tmp.res &&
            diff tmp.res $expect_file --side-by-side --ignore-space-change > tmp.out 2>&1
         then
@@ -116,7 +127,7 @@ function check_return {
     total_tests=$((total_tests+1))
     printf "%-${ALIGN}s " $file:
 
-    if $CIVCC $CFLAGS $file -o tmp.s > tmp.out 2>&1
+    if "$CIVCC" $CFLAGS $file -o tmp.s > tmp.out 2>&1
     then
         if [ $expect_failure -eq 1 ]; then
             echo_failed
@@ -164,7 +175,7 @@ function run_dir {
     echo
 }
 
-CIVCC=$1
+CIVCC="$1"
 shift 1
 for arg in $@; do
     run_dir $arg

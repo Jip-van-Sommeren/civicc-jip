@@ -20,7 +20,6 @@ extern int yyerror(char *errname);
 
 #define LINEBUF_SIZE 256
 #define YY_NO_UNPUT
-#define YY_NO_INPUT
 
 static inline void token_action();
 
@@ -43,12 +42,16 @@ int yycolumn = 1;
 ")"                        { FILTER( BRACKET_R); }
 ","                        { FILTER( COMMA); }
 ";"                        { FILTER( SEMICOLON); }
+"{"                        { FILTER( CURLY_BRACKET_L); }
+"}"                        { FILTER( CURLY_BRACKET_R); }
+"["                        { FILTER( SQUARE_BRACKET_L); }
+"]"                        { FILTER( SQUARE_BRACKET_R); }
 
 "-"                        { FILTER( MINUS); }
 "+"                        { FILTER( PLUS);  }
 "*"                        { FILTER( STAR);  }
 "/"                        { FILTER( SLASH);  }
-"%"                        { FILTER( PERCENT);  }
+"%"                        { FILTER( MOD);  }
 
 "<="                       { FILTER( LE);    }
 "<"                        { FILTER( LT);    }
@@ -60,14 +63,24 @@ int yycolumn = 1;
 "||"                       { FILTER( OR);    }
 
 "="                        { FILTER( LET);    }
+"!"                        { FILTER( NOT);    }
 
 "true"                     { FILTER( TRUEVAL); }
 "false"                    { FILTER( FALSEVAL); }
 
-"int"                       { FILTER( INT_TYPE); }
-"float"                       { FILTER( FLOAT_TYPE); }
-"bool"                       { FILTER( BOOL_TYPE); }
-"void"                       { FILTER( VOID_TYPE); }
+"int"                      { FILTER( INT_TYPE); }
+"float"                    { FILTER( FLOAT_TYPE); }
+"bool"                     { FILTER( BOOL_TYPE); }
+"void"                     { FILTER( VOID_TYPE); }
+
+"export"                   { FILTER( EXPORT); }
+"extern"                   { FILTER( EXTERN); }
+"return"                   { FILTER( RETURN); }
+"if"                       { FILTER( IF); }
+"else"                     { FILTER( ELSE); }
+"while"                    { FILTER( WHILE); }
+"do"                       { FILTER( DO); }
+"for"                      { FILTER( FOR); }
 
 [A-Za-z][A-Za-z0-9_]*      { yylval.id = STRcpy(yytext);
                              FILTER( ID);
@@ -76,6 +89,24 @@ int yycolumn = 1;
 [0-9]+                     { yylval.cint=atoi(yytext);
                              FILTER( NUM);
                            }
+
+[0-9]+"."[0-9]+([eE][-+]?[0-9]+)?   { yylval.cflt = atof(yytext);
+                                     FILTER( FLOAT);
+                                   }
+
+"/*"                        {
+                                char c, prev = 0;
+                                while((c = input()) != 0) {
+                                    if(c == '\n') {
+                                        global.line++; // Increment line counter
+                                        yycolumn = 1; // Reset column counter for the new line
+                                    }
+                                    if(prev == '*' && c == '/') break; // End of comment
+                                    prev = c;
+                                }
+                            }
+
+"//"                        { char c; while((c = input()) != '\n' && c != 0); /* Ignore single line comments */ }
 
 \n.*                       {
                              yycolumn = 1;

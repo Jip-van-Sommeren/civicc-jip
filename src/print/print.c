@@ -209,6 +209,8 @@ node_st *PRTfunbody(node_st *node)
 {
     printf("Function Body:\n");
     TRAVopt(FUNBODY_STMTS(node));
+    printf("Function vardecl:\n");
+    TRAVopt(FUNBODY_DECLS(node));
     return node;
 }
 
@@ -328,6 +330,22 @@ node_st *PRTglobdef(node_st *node)
     printf(";\n");
     return node;
 }
+/**
+ * @fn PRTvardecls
+ */
+node_st *PRTvardecls(node_st *node)
+{
+    // Print the current function definition
+    TRAVdo(VARDECLS_VARDECL(node));
+
+    // If there is another function definition in the list, continue printing
+    if (VARDECLS_NEXT(node) != NULL)
+    {
+        TRAVdo(VARDECLS_NEXT(node));
+    }
+
+    return node;
+}
 
 /**
  * @fn PRTparam
@@ -365,22 +383,34 @@ node_st *PRTparam(node_st *node)
         printf("]");
     }
 
-    // If there is another parameter in the list, print a comma.
-    if (PARAM_NEXT(node) != NULL)
-    {
-        printf(", ");
-        TRAVdo(PARAM_NEXT(node));
-    }
-
     printf("\n");
     return node;
 }
+
+/**
+ * @fn PRTparams
+ */
+node_st *PRTparams(node_st *node)
+{
+    // Print the current function definition
+    TRAVdo(PARAMS_PARAM(node));
+
+    // If there is another function definition in the list, continue printing
+    if (PARAMS_NEXT(node) != NULL)
+    {
+        TRAVdo(PARAMS_NEXT(node));
+    }
+
+    return node;
+}
+
 /**
  * @fn PRTvarDecl
  */
 node_st *PRTvardecl(node_st *node)
 {
     printf("Variable Declaration: %s\n", VARDECL_NAME(node));
+    printf("Variable Type: %d\n", VARDECL_TYPE(node));
     // Assuming dims and init are optional children
     TRAVopt(VARDECL_DIMS(node));
     if (VARDECL_INIT(node) != NULL)

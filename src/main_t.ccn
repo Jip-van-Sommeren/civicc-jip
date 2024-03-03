@@ -121,7 +121,7 @@ node ArrExpr {
 
 node Ids {
     children {
-        Ids next { constructor }
+        Ids next
     },
 
     attributes {
@@ -137,13 +137,13 @@ node ExprStmt {
 
 node Return {
     children {
-        Expr expr { constructor }
+        Expr expr
     }
 };
 
 node FunCall {
     children {
-        Exprs fun_args { constructor }
+        Exprs fun_args
     },
 
     attributes {
@@ -164,50 +164,50 @@ node Cast {
 node FunDefs {
     children {
         FunDef fundef { constructor, mandatory },
-        FunDefs next { constructor }
+        FunDefs next
     }
 };
 
 node FunDef {
     children {
-        FunBody body { constructor },
-        Params params { constructor }
+        FunBody body,
+        Param params
     },
 
     attributes {
         string name { constructor },
         Type type { constructor },
-        bool export { constructor }
+        bool export
     }
 };
 
 node FunBody {
     children {
-        VarDecls decls { constructor },
-        FunDefs local_fundefs { constructor },
-        Stmts stmts { constructor }
+        VarDecl decls,
+        FunDefs local_fun_args,
+        Stmts stmts
     }
 };
 
 node IfElse {
     children {
         Expr cond { constructor, mandatory },
-        Stmts then { constructor, mandatory },
-        Stmts else_block { constructor }
+        Stmts then,
+        Stmts else_block
     }
 };
 
 node While {
     children {
         Expr cond { constructor, mandatory },
-        Stmts block { constructor }
+        Stmts block
     }
 };
 
 node DoWhile {
     children {
         Expr cond { constructor, mandatory },
-        Stmts block { constructor }
+        Stmts block
     }
 };
 
@@ -215,8 +215,8 @@ node For {
     children {
         Expr start_expr { constructor, mandatory },
         Expr stop { constructor, mandatory },
-        Expr step { constructor },
-        Stmts block { constructor, mandatory }
+        Expr step,
+        Stmts block
     },
 
     attributes {
@@ -250,7 +250,8 @@ node GlobDef {
 
 node Param {
     children {
-        Ids dims
+        Ids dims,
+        Param next
     },
 
     attributes {
@@ -258,31 +259,17 @@ node Param {
         Type type { constructor }
     }
 };
-
-node Params {
-    children {
-        Param param { constructor, mandatory },
-        Params next { constructor }
-    }
-};
-
 
 node VarDecl {
     children {
-        Exprs dims { constructor },
-        Expr init { constructor }
+        Exprs dims,
+        Expr init,
+        VarDecl next
     },
 
     attributes {
         string name { constructor },
         Type type { constructor }
-    }
-};
-
-node VarDecls {
-    children {
-        VarDecl vardecl { constructor, mandatory },
-        VarDecls next { constructor }
     }
 };
 
