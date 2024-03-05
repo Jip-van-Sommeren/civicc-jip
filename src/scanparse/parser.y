@@ -25,7 +25,6 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %union {
  char               *id;
  int                 cint;
- bool               boolean;
  float               cflt;
  enum Type           ctype;
  node_st             *node;
@@ -44,16 +43,20 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %token <cflt> FLOAT
 %token <id> ID
 
-%type <boolean> opt_export opt_extern
+
 %type <node> intval floatval boolval constants expr exprs
 %type <node> stmts stmt varlet program
-%type <node> fundef fundefs vardecl vardecls
+%type <node> fundef vardecl 
 %type <node> param params
 %type <ctype> ctype
 %type <node> decls decl funbody
-//%type globdecl globdef funcall exprstmt for arrexpr
+%type <node> arrexpr
+%type <node> globdecl globdef funcall exprstmt for stmt_block var_decl_tail
 %type <node> ids
-%type <node> assign ifelse while dowhile return cast var
+%type <node> assign ifelse while dowhile return cast var compound_statement 
+%type <node> params_nonempty ids_nonempty exprs_nonempty blocks_nonempty
+%type <node> block blocks
+
 
 %left OR
 %left AND
@@ -63,6 +66,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %left STAR SLASH MOD
 %right NOT
 %right UMINUS
+%right THEN ELSE 
 
 %start program
 
@@ -87,63 +91,86 @@ decls:
           $$ = NULL;
       }
 
+
+
 exprs:
-        expr COMMA exprs
+        exprs_nonempty
        {
-         $$ = ASTexprs($1, $3);
+         $$ = $1;
        }
     |
-     %empty
-       {
-         $$ = NULL;
-       }
+       %empty 
+      {
+        $$ = NULL;
+      }
      ;
 
-//arrexpr: SQUARE_BRACKET_L exprs SQUARE_BRACKET_R
-//         {
-//           $$ = $2;
-//         }
-//       | SQUARE_BRACKET_L expr SQUARE_BRACKET_R
-//         {
-//           $$ = ASTarrexpr($2);
-//         }
-//         ;
 
+exprs_nonempty:
+    expr
+    {
+      $$ = ASTexprs($1, NULL);
+    }
+  | exprs COMMA expr
+  {
+    $$ = ASTexprs($3, $1);
+  }
+  ;     
 
+arrexpr: SQUARE_BRACKET_L exprs SQUARE_BRACKET_R
+         {
+           $$ = ASTarrexpr($2);
+         }
+       ;
 
-ids: ID
+ids:
+        ids_nonempty
+       {
+         $$ = $1;
+       }
+    |
+       %empty 
       {
-       $$ = ASTids(NULL, $1);
+        $$ = NULL;
       }
-    | ids COMMA ID
-      {
-        $$ = ASTids($1, $3);
+     ;
+
+
+ids_nonempty:
+    ID
+    {
+      $$ = ASTids(NULL, $1);
+    }
+  | ids COMMA ID
+  {
+    $$ = ASTids($1, $3);
+  }
+  ;
+
+
+
+funcall: ID BRACKET_L exprs BRACKET_R
+     {
+        $$ = ASTfuncall($3, $1);
       }
       ;
 
-
-//funcall: ID BRACKET_L exprs BRACKET_R SEMICOLON
-//     {
-//        $$ = ASTfuncall($1);
-//      }
-//      ;
-
-cast: BRACKET_L ctype BRACKET_R expr SEMICOLON
+cast: BRACKET_L ctype BRACKET_R expr
     {
       $$ = ASTcast($4, $2);
     }
     ;
 
 decl: 
-//     globdecl
-//       {
-//         $$ = $1;
-//      }
-//     | globdef
-//    {
-//       $$ = $1;
-//     }
-//      | 
+     globdecl
+       {
+         $$ = $1;
+      }
+     | globdef
+    {
+       $$ = $1;
+     }
+      | 
       fundef
       {
         $$ = $1;
@@ -152,124 +179,173 @@ decl:
 
 
 
-fundef: 
-        opt_export ctype ID BRACKET_L params BRACKET_R CURLY_BRACKET_L funbody CURLY_BRACKET_R
+fundef:
+        ctype ID BRACKET_L params BRACKET_R compound_statement
         {
-          $$ = ASTfundef($8, $5, $3, $2, $1);
+          $$ = ASTfundef($6, $4, $2, $1, false);
+        }
+        |
+        EXPORT ctype ID BRACKET_L params BRACKET_R compound_statement
+        {
+          $$ = ASTfundef($7, $5, $3, $2, true);
         }
         ;
 
-opt_export: EXPORT
-    {
-      $$ = true;
-    }
-    | %empty
-    {
-      $$ = false;
-    }
-    ;
 
-opt_extern: EXTERN
+compound_statement:
+    CURLY_BRACKET_L funbody CURLY_BRACKET_R
     {
-      $$ = true;
+      $$ = $2;
     }
-    | %empty
-    {
-      $$ = false;
-    }
-    ;
+  ;
 
-fundefs:
-        fundef fundefs
+
+blocks:
+        blocks_nonempty
        {
-         $$ = ASTfundefs($1, $2);
+         $$ = $1;
        }
     |
-     %empty
-       {
-         $$ = NULL;
-       }
+       %empty
+      {
+        $$ = NULL;
+      }
      ;
 
-funbody: vardecls fundefs stmts
-         {
-           $$ = ASTfunbody($1, $2, $3);
-         }
-         ;
+
+blocks_nonempty:
+    block
+    {
+      $$ = ASTblocks($1, NULL);
+    }
+  | blocks block
+  {
+    $$ = ASTblocks($2, $1);
+  }
+  ;
+
+block: 
+      vardecl
+      {
+        $$ = $1;
+      }
+      |
+      fundef
+      {
+        $$ = $1;
+      }
+      |
+      stmt
+      {
+        $$ = $1;
+      }
+
+funbody:
+    blocks
+    {
+        $$ = ASTfunbody($1);
+    }
+    ;
 
 
-//globdef: 
-//            opt_export ctype ID expr SEMICOLON
-//       {
-//          $$ = ASTglobdef($3, $2);
-//       }
-//
-//        ;
+
+
+//opt_init:
+//    LET expr { $$ = $2; }
+//    | %empty { $$ = NULL; }
+//    ;
+
+//opt_arr_init:
+//    EQUAL arr_expr { $$ = $2; }
+//    | /* empty */ { $$ = NULL; }
+//    ;
+
+globdef:
+    EXPORT ctype ID SEMICOLON
+    {
+        $$ = ASTglobdef(NULL, NULL, $3, $2, true);
+    }
+    | ctype ID SEMICOLON
+    {
+        $$ = ASTglobdef(NULL, NULL, $2, $1, false);
+    }
+    |
+    EXPORT ctype ID LET expr SEMICOLON
+    {
+        $$ = ASTglobdef(NULL, $5, $3, $2, true);
+    }
+    | ctype ID LET expr SEMICOLON
+    {
+        $$ = ASTglobdef(NULL, $4, $2, $1, false);
+    }
+    ;
 
 
 
 
-//globdecl: EXTERN ctype ID SEMICOLON
-//         {
-//           $$ = ASTglobdecl($3, $2);
-//         }
-//       | EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON
-//         {
-//           $$ = ASTglobdecl($6, $2);
-//        }
-//         ;
+globdecl:
+    EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON { $$ = ASTglobdecl($4, $6, $2); }
+    | EXTERN ctype ID SEMICOLON { $$ = ASTglobdecl(NULL, $3, $2); }
+;
+
 
 stmts:
-        stmt stmts
-        {
-         $$ = ASTstmts($1, $2);
-        }
-        |
-        %empty
-        {
-          $$ = NULL;
-       }
-       ;
-
+    %empty
+    {
+     $$ = NULL;
+    }
+  | stmts stmt
+  {
+    $$ = ASTstmts($2, $1);
+  }
+  ;
 
 
 
 param: ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID
       {
-        $$ = ASTparam($5, $1);
+        $$ = ASTparam($3, $5, $1);
       }
     | ctype ID
       {
-        $$ = ASTparam($2, $1);
+        $$ = ASTparam(NULL, $2, $1);
       }
       ;
 
 params:
-        param COMMA params
+        params_nonempty
        {
-         $$ = ASTparams($1, $3);
+         $$ = $1;
        }
     |
-     param
-       {
-         $$ = ASTparams($1, NULL);
-       }
-    |
-     %empty
-       {
-         $$ = NULL;
-       }
+       %empty 
+      {
+        $$ = NULL;
+      }
      ;
 
-stmt: 
+
+params_nonempty:
+    param
+    {
+      $$ = ASTparams($1, NULL);
+    }
+  | params COMMA param
+  {
+    $$ = ASTparams($3, $1);
+  }
+  ;
+
+
+stmt:
         assign
        {
          $$ = $1;
        }
-//       | exprstmt
-//       {
-//         $$ = $1;
-//       }
+       | exprstmt
+       {
+         $$ = $1;
+       }
        | ifelse
        {
          $$ = $1;
@@ -282,11 +358,11 @@ stmt:
        {
          $$ = $1;
        }
-//       | for
-//       {
-//         $$ = $1;
-//       }
-       | 
+       | for
+       {
+         $$ = $1;
+       }
+       |
       return
        {
          $$ = $1;
@@ -304,17 +380,17 @@ return: RETURN expr SEMICOLON
       }
       ;
 
-//exprstmt: expr SEMICOLON
-//           {
-//             $$ = ASTexprstmt($1);
-//           }
-//           ;
+exprstmt: expr SEMICOLON
+           {
+             $$ = ASTexprstmt($1);
+           }
+           ;
 
-ifelse: IF BRACKET_L expr BRACKET_R stmts
+ifelse: IF BRACKET_L expr BRACKET_R stmt_block            %prec THEN
       {
         $$ = ASTifelse($3, $5, NULL);
       }
-     | IF BRACKET_L expr BRACKET_R stmts ELSE stmts
+     | IF BRACKET_L expr BRACKET_R stmt_block ELSE stmt_block
       {
        $$ = ASTifelse($3, $5, $7);
       }
@@ -322,23 +398,44 @@ ifelse: IF BRACKET_L expr BRACKET_R stmts
 
 
 
-while: WHILE BRACKET_L expr BRACKET_R CURLY_BRACKET_L stmts CURLY_BRACKET_R
+
+
+
+while: WHILE BRACKET_L expr BRACKET_R stmt_block
           {
-            $$ = ASTwhile($3, $6);
+            $$ = ASTwhile($3, $5);
           }
           ;
 
-dowhile: DO CURLY_BRACKET_L stmts CURLY_BRACKET_R WHILE BRACKET_L expr BRACKET_R SEMICOLON
+stmt_block:
+    CURLY_BRACKET_L stmts CURLY_BRACKET_R
+    {
+      $$ = $2;
+    }
+  | stmt
+    {
+      $$ = ASTstmts($1, NULL);
+    }
+  ;
+
+dowhile:
+    DO stmt_block WHILE BRACKET_L expr BRACKET_R SEMICOLON
+    {
+      $$ = ASTdowhile($5, $2);
+    }
+    ;
+
+
+for:   FOR BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block
         {
-          $$ = ASTdowhile($7, $3);
+          $$ = ASTfor($6, $8, NULL, $10, $4);
+        }
+        |
+        FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
+        {
+          $$ = ASTfor($6, $8, $10, $12, $4);
         }
         ;
-
-//for:   FOR BRACKET_L ctype varlet LET expr COMMA expr BRACKET_R CURLY_BRACKET_L stmts CURLY_BRACKET_R
-//        {
-//          $$ = ASTfor($6, $8);
-//        }
-//        ;
 
 
 
@@ -348,35 +445,41 @@ assign: varlet LET expr SEMICOLON
         }
        ;
 
-vardecls:
-        vardecl vardecls
-       {
-         $$ = ASTvardecls($1, $2);
-       }
-    |
-     %empty
-       {
-         $$ = NULL;
-       }
-     ;
-
 
 vardecl:
-    ctype ID SQUARE_BRACKET_L exprs SQUARE_BRACKET_R LET expr SEMICOLON { $$ = ASTvardecl($4, $7, $2, $1); }
-    | ctype ID SQUARE_BRACKET_L exprs SQUARE_BRACKET_R SEMICOLON { $$ = ASTvardecl($4, NULL, $2, $1); }
-    | ctype ID LET expr SEMICOLON { $$ = ASTvardecl(NULL, $4, $2, $1); }
-    | ctype ID SEMICOLON { $$ = ASTvardecl(NULL, NULL, $2, $1); }
-;
+    ctype ID var_decl_tail
+    {
+        $$ = ASTvardecl(NULL, $3, $2, $1);
+    }
+    |
+        ctype SQUARE_BRACKET_L exprs SQUARE_BRACKET_R ID var_decl_tail
+    {
+        $$ = ASTvardecl($3, $6, $5, $1);
+    }
+  ;
+
+var_decl_tail:
+    SEMICOLON
+    {
+      $$ = NULL;
+    }
+
+  | LET expr SEMICOLON
+  {
+    $$ = $2;
+  }
+  ;
+
 
 varlet: ID
     {
-      $$ = ASTvarlet($1);
+      $$ = ASTvarlet(NULL, $1);
     }
     ;
 
 var: ID
     {
-      $$ = ASTvar($1);
+      $$ = ASTvar(NULL, $1);
     }
     ;
 
@@ -412,8 +515,6 @@ expr: expr PLUS expr
       { $$ = ASTmonop($2, MO_not); }
     | MINUS expr %prec UMINUS
       { $$ = ASTmonop($2, MO_neg); }
-    | BRACKET_L expr BRACKET_R
-      { $$ = $2; }
     | cast
     {
       $$ = $1;
@@ -426,14 +527,14 @@ expr: expr PLUS expr
       {
         $$ = $1;
       }
-//    | funcall
-//     {
-//        $$ = $1;
-//     }
-//    | arrexpr
-//      {
-//        $$ = $1;
-//    }
+      | funcall
+     {
+        $$ = $1;
+     }
+    | arrexpr
+      {
+        $$ = $1;
+    }
     ;
 
  constants: floatval

@@ -1,0 +1,3244 @@
+State 80 conflicts: 4 shift/reduce
+State 110 conflicts: 13 shift/reduce
+State 173 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: decls
+
+    2 decls: decl decls
+    3      | ε
+
+    4 exprs: exprs_nonempty
+    5      | ε
+
+    6 exprs_nonempty: expr
+    7               | exprs COMMA expr
+
+    8 ids: ids_nonempty
+    9    | ε
+
+   10 ids_nonempty: ID
+   11             | ids COMMA ID
+
+   12 funcall: ID BRACKET_L exprs BRACKET_R
+
+   13 cast: BRACKET_L ctype BRACKET_R expr
+
+   14 decl: globdecl
+   15     | globdef
+   16     | fundef
+
+   17 fundef: ctype ID BRACKET_L params BRACKET_R compound_statement
+   18       | EXPORT ctype ID BRACKET_L params BRACKET_R compound_statement
+
+   19 compound_statement: CURLY_BRACKET_L funbody CURLY_BRACKET_R
+
+   20 fundefs: fundef fundefs
+   21        | ε
+
+   22 funbody: vardecls fundefs stmts
+
+   23 globdef: EXPORT ctype ID SEMICOLON
+   24        | ctype ID SEMICOLON
+   25        | EXPORT ctype ID LET expr SEMICOLON
+   26        | ctype ID LET expr SEMICOLON
+
+   27 globdecl: EXTERN ctype ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R SEMICOLON
+   28         | EXTERN ctype ID SEMICOLON
+
+   29 stmts: ε
+   30      | stmts stmt
+
+   31 param: ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID
+   32      | ctype ID
+
+   33 params: params_nonempty
+   34       | ε
+
+   35 params_nonempty: param
+   36                | params COMMA param
+
+   37 stmt: assign
+   38     | exprstmt
+   39     | ifelse
+   40     | while
+   41     | dowhile
+   42     | for
+   43     | return
+
+   44 return: RETURN expr SEMICOLON
+   45       | RETURN SEMICOLON
+
+   46 exprstmt: expr SEMICOLON
+
+   47 ifelse: IF BRACKET_L expr BRACKET_R stmt_block
+   48       | IF BRACKET_L expr BRACKET_R stmt_block ELSE stmt_block
+
+   49 while: WHILE BRACKET_L expr BRACKET_R stmt_block
+
+   50 stmt_block: CURLY_BRACKET_L stmts CURLY_BRACKET_R
+   51           | stmt
+
+   52 dowhile: DO stmt_block WHILE BRACKET_L expr BRACKET_R SEMICOLON
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
+
+   55 assign: varlet LET expr SEMICOLON
+
+   56 vardecls: vardecl_nonempty
+   57         | ε
+
+   58 vardecl_nonempty: vardecl
+   59                 | vardecls vardecl
+
+   60 vardecl: ctype ID var_decl_tail
+
+   61 var_decl_tail: SEMICOLON
+   62              | LET expr SEMICOLON
+
+   63 varlet: ID
+
+   64 var: ID
+
+   65 expr: expr PLUS expr
+   66     | expr MINUS expr
+   67     | expr STAR expr
+   68     | expr SLASH expr
+   69     | expr MOD expr
+   70     | expr EQ expr
+   71     | expr NE expr
+   72     | expr LT expr
+   73     | expr LE expr
+   74     | expr GT expr
+   75     | expr GE expr
+   76     | expr AND expr
+   77     | expr OR expr
+   78     | NOT expr
+   79     | MINUS expr
+   80     | cast
+   81     | constants
+   82     | var
+   83     | funcall
+
+   84 constants: floatval
+   85          | intval
+   86          | boolval
+
+   87 floatval: FLOAT
+
+   88 intval: NUM
+
+   89 boolval: TRUEVAL
+   90        | FALSEVAL
+
+   91 ctype: INT_TYPE
+   92      | FLOAT_TYPE
+   93      | BOOL_TYPE
+   94      | VOID_TYPE
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    error (256)
+    BRACKET_L (258) 12 13 17 18 47 48 49 52 53 54
+    BRACKET_R (259) 12 13 17 18 47 48 49 52 53 54
+    COMMA (260) 7 11 36 53 54
+    SEMICOLON (261) 23 24 25 26 27 28 44 45 46 52 55 61 62
+    CURLY_BRACKET_L (262) 19 50
+    CURLY_BRACKET_R (263) 19 50
+    SQUARE_BRACKET_L (264) 27 31
+    SQUARE_BRACKET_R (265) 27 31
+    MINUS (266) 66 79
+    PLUS (267) 65
+    STAR (268) 67
+    SLASH (269) 68
+    MOD (270) 69
+    LE (271) 73
+    LT (272) 72
+    GE (273) 75
+    GT (274) 74
+    EQ (275) 70
+    NE (276) 71
+    OR (277) 77
+    AND (278) 76
+    NOT (279) 78
+    TRUEVAL (280) 89
+    FALSEVAL (281) 90
+    LET (282) 25 26 53 54 55 62
+    INT_TYPE (283) 53 54 91
+    FLOAT_TYPE (284) 92
+    BOOL_TYPE (285) 93
+    VOID_TYPE (286) 94
+    EXPORT (287) 18 23 25
+    RETURN (288) 44 45
+    IF (289) 47 48
+    ELSE (290) 48
+    WHILE (291) 49 52
+    DO (292) 52
+    FOR (293) 53 54
+    EXTERN (294) 27 28
+    NUM <cint> (295) 88
+    FLOAT <cflt> (296) 87
+    ID <id> (297) 10 11 12 17 18 23 24 25 26 27 28 31 32 53 54 60 63 64
+    UMINUS (298)
+
+
+Nonterminals, with rules where they appear
+
+    $accept (44)
+        on left: 0
+    program <node> (45)
+        on left: 1
+        on right: 0
+    decls <node> (46)
+        on left: 2 3
+        on right: 1 2
+    exprs <node> (47)
+        on left: 4 5
+        on right: 7 12
+    exprs_nonempty <node> (48)
+        on left: 6 7
+        on right: 4
+    ids <node> (49)
+        on left: 8 9
+        on right: 11 27 31
+    ids_nonempty <node> (50)
+        on left: 10 11
+        on right: 8
+    funcall <node> (51)
+        on left: 12
+        on right: 83
+    cast <node> (52)
+        on left: 13
+        on right: 80
+    decl <node> (53)
+        on left: 14 15 16
+        on right: 2
+    fundef <node> (54)
+        on left: 17 18
+        on right: 16 20
+    compound_statement <node> (55)
+        on left: 19
+        on right: 17 18
+    fundefs <node> (56)
+        on left: 20 21
+        on right: 20 22
+    funbody <node> (57)
+        on left: 22
+        on right: 19
+    globdef <node> (58)
+        on left: 23 24 25 26
+        on right: 15
+    globdecl <node> (59)
+        on left: 27 28
+        on right: 14
+    stmts <node> (60)
+        on left: 29 30
+        on right: 22 30 50
+    param <node> (61)
+        on left: 31 32
+        on right: 35 36
+    params <node> (62)
+        on left: 33 34
+        on right: 17 18 36
+    params_nonempty <node> (63)
+        on left: 35 36
+        on right: 33
+    stmt <node> (64)
+        on left: 37 38 39 40 41 42 43
+        on right: 30 51
+    return <node> (65)
+        on left: 44 45
+        on right: 43
+    exprstmt <node> (66)
+        on left: 46
+        on right: 38
+    ifelse <node> (67)
+        on left: 47 48
+        on right: 39
+    while <node> (68)
+        on left: 49
+        on right: 40
+    stmt_block <node> (69)
+        on left: 50 51
+        on right: 47 48 49 52 53 54
+    dowhile <node> (70)
+        on left: 52
+        on right: 41
+    for <node> (71)
+        on left: 53 54
+        on right: 42
+    assign <node> (72)
+        on left: 55
+        on right: 37
+    vardecls <node> (73)
+        on left: 56 57
+        on right: 22 59
+    vardecl_nonempty <node> (74)
+        on left: 58 59
+        on right: 56
+    vardecl <node> (75)
+        on left: 60
+        on right: 58 59
+    var_decl_tail <node> (76)
+        on left: 61 62
+        on right: 60
+    varlet <node> (77)
+        on left: 63
+        on right: 55
+    var <node> (78)
+        on left: 64
+        on right: 82
+    expr <node> (79)
+        on left: 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83
+        on right: 6 7 13 25 26 44 46 47 48 49 52 53 54 55 62 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79
+    constants <node> (80)
+        on left: 84 85 86
+        on right: 81
+    floatval <node> (81)
+        on left: 87
+        on right: 84
+    intval <node> (82)
+        on left: 88
+        on right: 85
+    boolval <node> (83)
+        on left: 89 90
+        on right: 86
+    ctype <ctype> (84)
+        on left: 91 92 93 94
+        on right: 13 17 18 23 24 25 26 27 28 31 32 60
+
+
+State 0
+
+    0 $accept: • program $end
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+    EXPORT      shift, and go to state 5
+    EXTERN      shift, and go to state 6
+
+    $default  reduce using rule 3 (decls)
+
+    program   go to state 7
+    decls     go to state 8
+    decl      go to state 9
+    fundef    go to state 10
+    globdef   go to state 11
+    globdecl  go to state 12
+    ctype     go to state 13
+
+
+State 1
+
+   91 ctype: INT_TYPE •
+
+    $default  reduce using rule 91 (ctype)
+
+
+State 2
+
+   92 ctype: FLOAT_TYPE •
+
+    $default  reduce using rule 92 (ctype)
+
+
+State 3
+
+   93 ctype: BOOL_TYPE •
+
+    $default  reduce using rule 93 (ctype)
+
+
+State 4
+
+   94 ctype: VOID_TYPE •
+
+    $default  reduce using rule 94 (ctype)
+
+
+State 5
+
+   18 fundef: EXPORT • ctype ID BRACKET_L params BRACKET_R compound_statement
+   23 globdef: EXPORT • ctype ID SEMICOLON
+   25        | EXPORT • ctype ID LET expr SEMICOLON
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    ctype  go to state 14
+
+
+State 6
+
+   27 globdecl: EXTERN • ctype ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R SEMICOLON
+   28         | EXTERN • ctype ID SEMICOLON
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    ctype  go to state 15
+
+
+State 7
+
+    0 $accept: program • $end
+
+    $end  shift, and go to state 16
+
+
+State 8
+
+    1 program: decls •
+
+    $default  reduce using rule 1 (program)
+
+
+State 9
+
+    2 decls: decl • decls
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+    EXPORT      shift, and go to state 5
+    EXTERN      shift, and go to state 6
+
+    $default  reduce using rule 3 (decls)
+
+    decls     go to state 17
+    decl      go to state 9
+    fundef    go to state 10
+    globdef   go to state 11
+    globdecl  go to state 12
+    ctype     go to state 13
+
+
+State 10
+
+   16 decl: fundef •
+
+    $default  reduce using rule 16 (decl)
+
+
+State 11
+
+   15 decl: globdef •
+
+    $default  reduce using rule 15 (decl)
+
+
+State 12
+
+   14 decl: globdecl •
+
+    $default  reduce using rule 14 (decl)
+
+
+State 13
+
+   17 fundef: ctype • ID BRACKET_L params BRACKET_R compound_statement
+   24 globdef: ctype • ID SEMICOLON
+   26        | ctype • ID LET expr SEMICOLON
+
+    ID  shift, and go to state 18
+
+
+State 14
+
+   18 fundef: EXPORT ctype • ID BRACKET_L params BRACKET_R compound_statement
+   23 globdef: EXPORT ctype • ID SEMICOLON
+   25        | EXPORT ctype • ID LET expr SEMICOLON
+
+    ID  shift, and go to state 19
+
+
+State 15
+
+   27 globdecl: EXTERN ctype • ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R SEMICOLON
+   28         | EXTERN ctype • ID SEMICOLON
+
+    ID  shift, and go to state 20
+
+
+State 16
+
+    0 $accept: program $end •
+
+    $default  accept
+
+
+State 17
+
+    2 decls: decl decls •
+
+    $default  reduce using rule 2 (decls)
+
+
+State 18
+
+   17 fundef: ctype ID • BRACKET_L params BRACKET_R compound_statement
+   24 globdef: ctype ID • SEMICOLON
+   26        | ctype ID • LET expr SEMICOLON
+
+    BRACKET_L  shift, and go to state 21
+    SEMICOLON  shift, and go to state 22
+    LET        shift, and go to state 23
+
+
+State 19
+
+   18 fundef: EXPORT ctype ID • BRACKET_L params BRACKET_R compound_statement
+   23 globdef: EXPORT ctype ID • SEMICOLON
+   25        | EXPORT ctype ID • LET expr SEMICOLON
+
+    BRACKET_L  shift, and go to state 24
+    SEMICOLON  shift, and go to state 25
+    LET        shift, and go to state 26
+
+
+State 20
+
+   27 globdecl: EXTERN ctype ID • SQUARE_BRACKET_L ids SQUARE_BRACKET_R SEMICOLON
+   28         | EXTERN ctype ID • SEMICOLON
+
+    SEMICOLON         shift, and go to state 27
+    SQUARE_BRACKET_L  shift, and go to state 28
+
+
+State 21
+
+   17 fundef: ctype ID BRACKET_L • params BRACKET_R compound_statement
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    $default  reduce using rule 34 (params)
+
+    param            go to state 29
+    params           go to state 30
+    params_nonempty  go to state 31
+    ctype            go to state 32
+
+
+State 22
+
+   24 globdef: ctype ID SEMICOLON •
+
+    $default  reduce using rule 24 (globdef)
+
+
+State 23
+
+   26 globdef: ctype ID LET • expr SEMICOLON
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 44
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 24
+
+   18 fundef: EXPORT ctype ID BRACKET_L • params BRACKET_R compound_statement
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    $default  reduce using rule 34 (params)
+
+    param            go to state 29
+    params           go to state 49
+    params_nonempty  go to state 31
+    ctype            go to state 32
+
+
+State 25
+
+   23 globdef: EXPORT ctype ID SEMICOLON •
+
+    $default  reduce using rule 23 (globdef)
+
+
+State 26
+
+   25 globdef: EXPORT ctype ID LET • expr SEMICOLON
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 50
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 27
+
+   28 globdecl: EXTERN ctype ID SEMICOLON •
+
+    $default  reduce using rule 28 (globdecl)
+
+
+State 28
+
+   27 globdecl: EXTERN ctype ID SQUARE_BRACKET_L • ids SQUARE_BRACKET_R SEMICOLON
+
+    ID  shift, and go to state 51
+
+    $default  reduce using rule 9 (ids)
+
+    ids           go to state 52
+    ids_nonempty  go to state 53
+
+
+State 29
+
+   35 params_nonempty: param •
+
+    $default  reduce using rule 35 (params_nonempty)
+
+
+State 30
+
+   17 fundef: ctype ID BRACKET_L params • BRACKET_R compound_statement
+   36 params_nonempty: params • COMMA param
+
+    BRACKET_R  shift, and go to state 54
+    COMMA      shift, and go to state 55
+
+
+State 31
+
+   33 params: params_nonempty •
+
+    $default  reduce using rule 33 (params)
+
+
+State 32
+
+   31 param: ctype • SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID
+   32      | ctype • ID
+
+    SQUARE_BRACKET_L  shift, and go to state 56
+    ID                shift, and go to state 57
+
+
+State 33
+
+   13 cast: BRACKET_L • ctype BRACKET_R expr
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    ctype  go to state 58
+
+
+State 34
+
+   79 expr: MINUS • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 59
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 35
+
+   78 expr: NOT • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 60
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 36
+
+   89 boolval: TRUEVAL •
+
+    $default  reduce using rule 89 (boolval)
+
+
+State 37
+
+   90 boolval: FALSEVAL •
+
+    $default  reduce using rule 90 (boolval)
+
+
+State 38
+
+   88 intval: NUM •
+
+    $default  reduce using rule 88 (intval)
+
+
+State 39
+
+   87 floatval: FLOAT •
+
+    $default  reduce using rule 87 (floatval)
+
+
+State 40
+
+   12 funcall: ID • BRACKET_L exprs BRACKET_R
+   64 var: ID •
+
+    BRACKET_L  shift, and go to state 61
+
+    $default  reduce using rule 64 (var)
+
+
+State 41
+
+   83 expr: funcall •
+
+    $default  reduce using rule 83 (expr)
+
+
+State 42
+
+   80 expr: cast •
+
+    $default  reduce using rule 80 (expr)
+
+
+State 43
+
+   82 expr: var •
+
+    $default  reduce using rule 82 (expr)
+
+
+State 44
+
+   26 globdef: ctype ID LET expr • SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    SEMICOLON  shift, and go to state 62
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 45
+
+   81 expr: constants •
+
+    $default  reduce using rule 81 (expr)
+
+
+State 46
+
+   84 constants: floatval •
+
+    $default  reduce using rule 84 (constants)
+
+
+State 47
+
+   85 constants: intval •
+
+    $default  reduce using rule 85 (constants)
+
+
+State 48
+
+   86 constants: boolval •
+
+    $default  reduce using rule 86 (constants)
+
+
+State 49
+
+   18 fundef: EXPORT ctype ID BRACKET_L params • BRACKET_R compound_statement
+   36 params_nonempty: params • COMMA param
+
+    BRACKET_R  shift, and go to state 76
+    COMMA      shift, and go to state 55
+
+
+State 50
+
+   25 globdef: EXPORT ctype ID LET expr • SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    SEMICOLON  shift, and go to state 77
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 51
+
+   10 ids_nonempty: ID •
+
+    $default  reduce using rule 10 (ids_nonempty)
+
+
+State 52
+
+   11 ids_nonempty: ids • COMMA ID
+   27 globdecl: EXTERN ctype ID SQUARE_BRACKET_L ids • SQUARE_BRACKET_R SEMICOLON
+
+    COMMA             shift, and go to state 78
+    SQUARE_BRACKET_R  shift, and go to state 79
+
+
+State 53
+
+    8 ids: ids_nonempty •
+
+    $default  reduce using rule 8 (ids)
+
+
+State 54
+
+   17 fundef: ctype ID BRACKET_L params BRACKET_R • compound_statement
+
+    CURLY_BRACKET_L  shift, and go to state 80
+
+    compound_statement  go to state 81
+
+
+State 55
+
+   36 params_nonempty: params COMMA • param
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    param  go to state 82
+    ctype  go to state 32
+
+
+State 56
+
+   31 param: ctype SQUARE_BRACKET_L • ids SQUARE_BRACKET_R ID
+
+    ID  shift, and go to state 51
+
+    $default  reduce using rule 9 (ids)
+
+    ids           go to state 83
+    ids_nonempty  go to state 53
+
+
+State 57
+
+   32 param: ctype ID •
+
+    $default  reduce using rule 32 (param)
+
+
+State 58
+
+   13 cast: BRACKET_L ctype • BRACKET_R expr
+
+    BRACKET_R  shift, and go to state 84
+
+
+State 59
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+   79     | MINUS expr •
+
+    $default  reduce using rule 79 (expr)
+
+
+State 60
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+   78     | NOT expr •
+
+    $default  reduce using rule 78 (expr)
+
+
+State 61
+
+   12 funcall: ID BRACKET_L • exprs BRACKET_R
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    $default  reduce using rule 5 (exprs)
+
+    exprs           go to state 85
+    exprs_nonempty  go to state 86
+    funcall         go to state 41
+    cast            go to state 42
+    var             go to state 43
+    expr            go to state 87
+    constants       go to state 45
+    floatval        go to state 46
+    intval          go to state 47
+    boolval         go to state 48
+
+
+State 62
+
+   26 globdef: ctype ID LET expr SEMICOLON •
+
+    $default  reduce using rule 26 (globdef)
+
+
+State 63
+
+   66 expr: expr MINUS • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 88
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 64
+
+   65 expr: expr PLUS • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 89
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 65
+
+   67 expr: expr STAR • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 90
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 66
+
+   68 expr: expr SLASH • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 91
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 67
+
+   69 expr: expr MOD • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 92
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 68
+
+   73 expr: expr LE • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 93
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 69
+
+   72 expr: expr LT • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 94
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 70
+
+   75 expr: expr GE • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 95
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 71
+
+   74 expr: expr GT • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 96
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 72
+
+   70 expr: expr EQ • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 97
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 73
+
+   71 expr: expr NE • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 98
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 74
+
+   77 expr: expr OR • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 99
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 75
+
+   76 expr: expr AND • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 100
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 76
+
+   18 fundef: EXPORT ctype ID BRACKET_L params BRACKET_R • compound_statement
+
+    CURLY_BRACKET_L  shift, and go to state 80
+
+    compound_statement  go to state 101
+
+
+State 77
+
+   25 globdef: EXPORT ctype ID LET expr SEMICOLON •
+
+    $default  reduce using rule 25 (globdef)
+
+
+State 78
+
+   11 ids_nonempty: ids COMMA • ID
+
+    ID  shift, and go to state 102
+
+
+State 79
+
+   27 globdecl: EXTERN ctype ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R • SEMICOLON
+
+    SEMICOLON  shift, and go to state 103
+
+
+State 80
+
+   19 compound_statement: CURLY_BRACKET_L • funbody CURLY_BRACKET_R
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    INT_TYPE    [reduce using rule 57 (vardecls)]
+    FLOAT_TYPE  [reduce using rule 57 (vardecls)]
+    BOOL_TYPE   [reduce using rule 57 (vardecls)]
+    VOID_TYPE   [reduce using rule 57 (vardecls)]
+    $default    reduce using rule 57 (vardecls)
+
+    funbody           go to state 104
+    vardecls          go to state 105
+    vardecl_nonempty  go to state 106
+    vardecl           go to state 107
+    ctype             go to state 108
+
+
+State 81
+
+   17 fundef: ctype ID BRACKET_L params BRACKET_R compound_statement •
+
+    $default  reduce using rule 17 (fundef)
+
+
+State 82
+
+   36 params_nonempty: params COMMA param •
+
+    $default  reduce using rule 36 (params_nonempty)
+
+
+State 83
+
+   11 ids_nonempty: ids • COMMA ID
+   31 param: ctype SQUARE_BRACKET_L ids • SQUARE_BRACKET_R ID
+
+    COMMA             shift, and go to state 78
+    SQUARE_BRACKET_R  shift, and go to state 109
+
+
+State 84
+
+   13 cast: BRACKET_L ctype BRACKET_R • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 110
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 85
+
+    7 exprs_nonempty: exprs • COMMA expr
+   12 funcall: ID BRACKET_L exprs • BRACKET_R
+
+    BRACKET_R  shift, and go to state 111
+    COMMA      shift, and go to state 112
+
+
+State 86
+
+    4 exprs: exprs_nonempty •
+
+    $default  reduce using rule 4 (exprs)
+
+
+State 87
+
+    6 exprs_nonempty: expr •
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+    EQ     shift, and go to state 72
+    NE     shift, and go to state 73
+    OR     shift, and go to state 74
+    AND    shift, and go to state 75
+
+    $default  reduce using rule 6 (exprs_nonempty)
+
+
+State 88
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   66     | expr MINUS expr •
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+
+    $default  reduce using rule 66 (expr)
+
+
+State 89
+
+   65 expr: expr • PLUS expr
+   65     | expr PLUS expr •
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+
+    $default  reduce using rule 65 (expr)
+
+
+State 90
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   67     | expr STAR expr •
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    $default  reduce using rule 67 (expr)
+
+
+State 91
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   68     | expr SLASH expr •
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    $default  reduce using rule 68 (expr)
+
+
+State 92
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   69     | expr MOD expr •
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    $default  reduce using rule 69 (expr)
+
+
+State 93
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   73     | expr LE expr •
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+
+    $default  reduce using rule 73 (expr)
+
+
+State 94
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   72     | expr LT expr •
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+
+    $default  reduce using rule 72 (expr)
+
+
+State 95
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   75     | expr GE expr •
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+
+    $default  reduce using rule 75 (expr)
+
+
+State 96
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   74     | expr GT expr •
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+
+    $default  reduce using rule 74 (expr)
+
+
+State 97
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   70     | expr EQ expr •
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+
+    $default  reduce using rule 70 (expr)
+
+
+State 98
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   71     | expr NE expr •
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+
+    $default  reduce using rule 71 (expr)
+
+
+State 99
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+   77     | expr OR expr •
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+    EQ     shift, and go to state 72
+    NE     shift, and go to state 73
+    AND    shift, and go to state 75
+
+    $default  reduce using rule 77 (expr)
+
+
+State 100
+
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   76     | expr AND expr •
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+    EQ     shift, and go to state 72
+    NE     shift, and go to state 73
+
+    $default  reduce using rule 76 (expr)
+
+
+State 101
+
+   18 fundef: EXPORT ctype ID BRACKET_L params BRACKET_R compound_statement •
+
+    $default  reduce using rule 18 (fundef)
+
+
+State 102
+
+   11 ids_nonempty: ids COMMA ID •
+
+    $default  reduce using rule 11 (ids_nonempty)
+
+
+State 103
+
+   27 globdecl: EXTERN ctype ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R SEMICOLON •
+
+    $default  reduce using rule 27 (globdecl)
+
+
+State 104
+
+   19 compound_statement: CURLY_BRACKET_L funbody • CURLY_BRACKET_R
+
+    CURLY_BRACKET_R  shift, and go to state 113
+
+
+State 105
+
+   22 funbody: vardecls • fundefs stmts
+   59 vardecl_nonempty: vardecls • vardecl
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+    EXPORT      shift, and go to state 114
+
+    $default  reduce using rule 21 (fundefs)
+
+    fundef   go to state 115
+    fundefs  go to state 116
+    vardecl  go to state 117
+    ctype    go to state 118
+
+
+State 106
+
+   56 vardecls: vardecl_nonempty •
+
+    $default  reduce using rule 56 (vardecls)
+
+
+State 107
+
+   58 vardecl_nonempty: vardecl •
+
+    $default  reduce using rule 58 (vardecl_nonempty)
+
+
+State 108
+
+   60 vardecl: ctype • ID var_decl_tail
+
+    ID  shift, and go to state 119
+
+
+State 109
+
+   31 param: ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R • ID
+
+    ID  shift, and go to state 120
+
+
+State 110
+
+   13 cast: BRACKET_L ctype BRACKET_R expr •
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+    EQ     shift, and go to state 72
+    NE     shift, and go to state 73
+    OR     shift, and go to state 74
+    AND    shift, and go to state 75
+
+    MINUS     [reduce using rule 13 (cast)]
+    PLUS      [reduce using rule 13 (cast)]
+    STAR      [reduce using rule 13 (cast)]
+    SLASH     [reduce using rule 13 (cast)]
+    MOD       [reduce using rule 13 (cast)]
+    LE        [reduce using rule 13 (cast)]
+    LT        [reduce using rule 13 (cast)]
+    GE        [reduce using rule 13 (cast)]
+    GT        [reduce using rule 13 (cast)]
+    EQ        [reduce using rule 13 (cast)]
+    NE        [reduce using rule 13 (cast)]
+    OR        [reduce using rule 13 (cast)]
+    AND       [reduce using rule 13 (cast)]
+    $default  reduce using rule 13 (cast)
+
+
+State 111
+
+   12 funcall: ID BRACKET_L exprs BRACKET_R •
+
+    $default  reduce using rule 12 (funcall)
+
+
+State 112
+
+    7 exprs_nonempty: exprs COMMA • expr
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 121
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 113
+
+   19 compound_statement: CURLY_BRACKET_L funbody CURLY_BRACKET_R •
+
+    $default  reduce using rule 19 (compound_statement)
+
+
+State 114
+
+   18 fundef: EXPORT • ctype ID BRACKET_L params BRACKET_R compound_statement
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+
+    ctype  go to state 122
+
+
+State 115
+
+   20 fundefs: fundef • fundefs
+
+    INT_TYPE    shift, and go to state 1
+    FLOAT_TYPE  shift, and go to state 2
+    BOOL_TYPE   shift, and go to state 3
+    VOID_TYPE   shift, and go to state 4
+    EXPORT      shift, and go to state 114
+
+    $default  reduce using rule 21 (fundefs)
+
+    fundef   go to state 115
+    fundefs  go to state 123
+    ctype    go to state 124
+
+
+State 116
+
+   22 funbody: vardecls fundefs • stmts
+
+    $default  reduce using rule 29 (stmts)
+
+    stmts  go to state 125
+
+
+State 117
+
+   59 vardecl_nonempty: vardecls vardecl •
+
+    $default  reduce using rule 59 (vardecl_nonempty)
+
+
+State 118
+
+   17 fundef: ctype • ID BRACKET_L params BRACKET_R compound_statement
+   60 vardecl: ctype • ID var_decl_tail
+
+    ID  shift, and go to state 126
+
+
+State 119
+
+   60 vardecl: ctype ID • var_decl_tail
+
+    SEMICOLON  shift, and go to state 127
+    LET        shift, and go to state 128
+
+    var_decl_tail  go to state 129
+
+
+State 120
+
+   31 param: ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID •
+
+    $default  reduce using rule 31 (param)
+
+
+State 121
+
+    7 exprs_nonempty: exprs COMMA expr •
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+    EQ     shift, and go to state 72
+    NE     shift, and go to state 73
+    OR     shift, and go to state 74
+    AND    shift, and go to state 75
+
+    $default  reduce using rule 7 (exprs_nonempty)
+
+
+State 122
+
+   18 fundef: EXPORT ctype • ID BRACKET_L params BRACKET_R compound_statement
+
+    ID  shift, and go to state 130
+
+
+State 123
+
+   20 fundefs: fundef fundefs •
+
+    $default  reduce using rule 20 (fundefs)
+
+
+State 124
+
+   17 fundef: ctype • ID BRACKET_L params BRACKET_R compound_statement
+
+    ID  shift, and go to state 131
+
+
+State 125
+
+   22 funbody: vardecls fundefs stmts •
+   30 stmts: stmts • stmt
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    RETURN     shift, and go to state 132
+    IF         shift, and go to state 133
+    WHILE      shift, and go to state 134
+    DO         shift, and go to state 135
+    FOR        shift, and go to state 136
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 137
+
+    $default  reduce using rule 22 (funbody)
+
+    funcall    go to state 41
+    cast       go to state 42
+    stmt       go to state 138
+    return     go to state 139
+    exprstmt   go to state 140
+    ifelse     go to state 141
+    while      go to state 142
+    dowhile    go to state 143
+    for        go to state 144
+    assign     go to state 145
+    varlet     go to state 146
+    var        go to state 43
+    expr       go to state 147
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 126
+
+   17 fundef: ctype ID • BRACKET_L params BRACKET_R compound_statement
+   60 vardecl: ctype ID • var_decl_tail
+
+    BRACKET_L  shift, and go to state 21
+    SEMICOLON  shift, and go to state 127
+    LET        shift, and go to state 128
+
+    var_decl_tail  go to state 129
+
+
+State 127
+
+   61 var_decl_tail: SEMICOLON •
+
+    $default  reduce using rule 61 (var_decl_tail)
+
+
+State 128
+
+   62 var_decl_tail: LET • expr SEMICOLON
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 148
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 129
+
+   60 vardecl: ctype ID var_decl_tail •
+
+    $default  reduce using rule 60 (vardecl)
+
+
+State 130
+
+   18 fundef: EXPORT ctype ID • BRACKET_L params BRACKET_R compound_statement
+
+    BRACKET_L  shift, and go to state 24
+
+
+State 131
+
+   17 fundef: ctype ID • BRACKET_L params BRACKET_R compound_statement
+
+    BRACKET_L  shift, and go to state 21
+
+
+State 132
+
+   44 return: RETURN • expr SEMICOLON
+   45       | RETURN • SEMICOLON
+
+    BRACKET_L  shift, and go to state 33
+    SEMICOLON  shift, and go to state 149
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 150
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 133
+
+   47 ifelse: IF • BRACKET_L expr BRACKET_R stmt_block
+   48       | IF • BRACKET_L expr BRACKET_R stmt_block ELSE stmt_block
+
+    BRACKET_L  shift, and go to state 151
+
+
+State 134
+
+   49 while: WHILE • BRACKET_L expr BRACKET_R stmt_block
+
+    BRACKET_L  shift, and go to state 152
+
+
+State 135
+
+   52 dowhile: DO • stmt_block WHILE BRACKET_L expr BRACKET_R SEMICOLON
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_L  shift, and go to state 153
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall     go to state 41
+    cast        go to state 42
+    stmt        go to state 154
+    return      go to state 139
+    exprstmt    go to state 140
+    ifelse      go to state 141
+    while       go to state 142
+    stmt_block  go to state 155
+    dowhile     go to state 143
+    for         go to state 144
+    assign      go to state 145
+    varlet      go to state 146
+    var         go to state 43
+    expr        go to state 147
+    constants   go to state 45
+    floatval    go to state 46
+    intval      go to state 47
+    boolval     go to state 48
+
+
+State 136
+
+   53 for: FOR • BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block
+   54    | FOR • BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
+
+    BRACKET_L  shift, and go to state 156
+
+
+State 137
+
+   12 funcall: ID • BRACKET_L exprs BRACKET_R
+   63 varlet: ID •
+   64 var: ID •
+
+    BRACKET_L  shift, and go to state 61
+
+    LET       reduce using rule 63 (varlet)
+    $default  reduce using rule 64 (var)
+
+
+State 138
+
+   30 stmts: stmts stmt •
+
+    $default  reduce using rule 30 (stmts)
+
+
+State 139
+
+   43 stmt: return •
+
+    $default  reduce using rule 43 (stmt)
+
+
+State 140
+
+   38 stmt: exprstmt •
+
+    $default  reduce using rule 38 (stmt)
+
+
+State 141
+
+   39 stmt: ifelse •
+
+    $default  reduce using rule 39 (stmt)
+
+
+State 142
+
+   40 stmt: while •
+
+    $default  reduce using rule 40 (stmt)
+
+
+State 143
+
+   41 stmt: dowhile •
+
+    $default  reduce using rule 41 (stmt)
+
+
+State 144
+
+   42 stmt: for •
+
+    $default  reduce using rule 42 (stmt)
+
+
+State 145
+
+   37 stmt: assign •
+
+    $default  reduce using rule 37 (stmt)
+
+
+State 146
+
+   55 assign: varlet • LET expr SEMICOLON
+
+    LET  shift, and go to state 157
+
+
+State 147
+
+   46 exprstmt: expr • SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    SEMICOLON  shift, and go to state 158
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 148
+
+   62 var_decl_tail: LET expr • SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    SEMICOLON  shift, and go to state 159
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 149
+
+   45 return: RETURN SEMICOLON •
+
+    $default  reduce using rule 45 (return)
+
+
+State 150
+
+   44 return: RETURN expr • SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    SEMICOLON  shift, and go to state 160
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 151
+
+   47 ifelse: IF BRACKET_L • expr BRACKET_R stmt_block
+   48       | IF BRACKET_L • expr BRACKET_R stmt_block ELSE stmt_block
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 161
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 152
+
+   49 while: WHILE BRACKET_L • expr BRACKET_R stmt_block
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 162
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 153
+
+   50 stmt_block: CURLY_BRACKET_L • stmts CURLY_BRACKET_R
+
+    $default  reduce using rule 29 (stmts)
+
+    stmts  go to state 163
+
+
+State 154
+
+   51 stmt_block: stmt •
+
+    $default  reduce using rule 51 (stmt_block)
+
+
+State 155
+
+   52 dowhile: DO stmt_block • WHILE BRACKET_L expr BRACKET_R SEMICOLON
+
+    WHILE  shift, and go to state 164
+
+
+State 156
+
+   53 for: FOR BRACKET_L • INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L • INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
+
+    INT_TYPE  shift, and go to state 165
+
+
+State 157
+
+   55 assign: varlet LET • expr SEMICOLON
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 166
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 158
+
+   46 exprstmt: expr SEMICOLON •
+
+    $default  reduce using rule 46 (exprstmt)
+
+
+State 159
+
+   62 var_decl_tail: LET expr SEMICOLON •
+
+    $default  reduce using rule 62 (var_decl_tail)
+
+
+State 160
+
+   44 return: RETURN expr SEMICOLON •
+
+    $default  reduce using rule 44 (return)
+
+
+State 161
+
+   47 ifelse: IF BRACKET_L expr • BRACKET_R stmt_block
+   48       | IF BRACKET_L expr • BRACKET_R stmt_block ELSE stmt_block
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    BRACKET_R  shift, and go to state 167
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 162
+
+   49 while: WHILE BRACKET_L expr • BRACKET_R stmt_block
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    BRACKET_R  shift, and go to state 168
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 163
+
+   30 stmts: stmts • stmt
+   50 stmt_block: CURLY_BRACKET_L stmts • CURLY_BRACKET_R
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_R  shift, and go to state 169
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall    go to state 41
+    cast       go to state 42
+    stmt       go to state 138
+    return     go to state 139
+    exprstmt   go to state 140
+    ifelse     go to state 141
+    while      go to state 142
+    dowhile    go to state 143
+    for        go to state 144
+    assign     go to state 145
+    varlet     go to state 146
+    var        go to state 43
+    expr       go to state 147
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 164
+
+   52 dowhile: DO stmt_block WHILE • BRACKET_L expr BRACKET_R SEMICOLON
+
+    BRACKET_L  shift, and go to state 170
+
+
+State 165
+
+   53 for: FOR BRACKET_L INT_TYPE • ID LET expr COMMA expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE • ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
+
+    ID  shift, and go to state 171
+
+
+State 166
+
+   55 assign: varlet LET expr • SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    SEMICOLON  shift, and go to state 172
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 167
+
+   47 ifelse: IF BRACKET_L expr BRACKET_R • stmt_block
+   48       | IF BRACKET_L expr BRACKET_R • stmt_block ELSE stmt_block
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_L  shift, and go to state 153
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall     go to state 41
+    cast        go to state 42
+    stmt        go to state 154
+    return      go to state 139
+    exprstmt    go to state 140
+    ifelse      go to state 141
+    while       go to state 142
+    stmt_block  go to state 173
+    dowhile     go to state 143
+    for         go to state 144
+    assign      go to state 145
+    varlet      go to state 146
+    var         go to state 43
+    expr        go to state 147
+    constants   go to state 45
+    floatval    go to state 46
+    intval      go to state 47
+    boolval     go to state 48
+
+
+State 168
+
+   49 while: WHILE BRACKET_L expr BRACKET_R • stmt_block
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_L  shift, and go to state 153
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall     go to state 41
+    cast        go to state 42
+    stmt        go to state 154
+    return      go to state 139
+    exprstmt    go to state 140
+    ifelse      go to state 141
+    while       go to state 142
+    stmt_block  go to state 174
+    dowhile     go to state 143
+    for         go to state 144
+    assign      go to state 145
+    varlet      go to state 146
+    var         go to state 43
+    expr        go to state 147
+    constants   go to state 45
+    floatval    go to state 46
+    intval      go to state 47
+    boolval     go to state 48
+
+
+State 169
+
+   50 stmt_block: CURLY_BRACKET_L stmts CURLY_BRACKET_R •
+
+    $default  reduce using rule 50 (stmt_block)
+
+
+State 170
+
+   52 dowhile: DO stmt_block WHILE BRACKET_L • expr BRACKET_R SEMICOLON
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 175
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 171
+
+   53 for: FOR BRACKET_L INT_TYPE ID • LET expr COMMA expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE ID • LET expr COMMA expr COMMA expr BRACKET_R stmt_block
+
+    LET  shift, and go to state 176
+
+
+State 172
+
+   55 assign: varlet LET expr SEMICOLON •
+
+    $default  reduce using rule 55 (assign)
+
+
+State 173
+
+   47 ifelse: IF BRACKET_L expr BRACKET_R stmt_block •
+   48       | IF BRACKET_L expr BRACKET_R stmt_block • ELSE stmt_block
+
+    ELSE  shift, and go to state 177
+
+    ELSE      [reduce using rule 47 (ifelse)]
+    $default  reduce using rule 47 (ifelse)
+
+
+State 174
+
+   49 while: WHILE BRACKET_L expr BRACKET_R stmt_block •
+
+    $default  reduce using rule 49 (while)
+
+
+State 175
+
+   52 dowhile: DO stmt_block WHILE BRACKET_L expr • BRACKET_R SEMICOLON
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    BRACKET_R  shift, and go to state 178
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 176
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET • expr COMMA expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE ID LET • expr COMMA expr COMMA expr BRACKET_R stmt_block
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 179
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 177
+
+   48 ifelse: IF BRACKET_L expr BRACKET_R stmt_block ELSE • stmt_block
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_L  shift, and go to state 153
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall     go to state 41
+    cast        go to state 42
+    stmt        go to state 154
+    return      go to state 139
+    exprstmt    go to state 140
+    ifelse      go to state 141
+    while       go to state 142
+    stmt_block  go to state 180
+    dowhile     go to state 143
+    for         go to state 144
+    assign      go to state 145
+    varlet      go to state 146
+    var         go to state 43
+    expr        go to state 147
+    constants   go to state 45
+    floatval    go to state 46
+    intval      go to state 47
+    boolval     go to state 48
+
+
+State 178
+
+   52 dowhile: DO stmt_block WHILE BRACKET_L expr BRACKET_R • SEMICOLON
+
+    SEMICOLON  shift, and go to state 181
+
+
+State 179
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET expr • COMMA expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE ID LET expr • COMMA expr COMMA expr BRACKET_R stmt_block
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    COMMA  shift, and go to state 182
+    MINUS  shift, and go to state 63
+    PLUS   shift, and go to state 64
+    STAR   shift, and go to state 65
+    SLASH  shift, and go to state 66
+    MOD    shift, and go to state 67
+    LE     shift, and go to state 68
+    LT     shift, and go to state 69
+    GE     shift, and go to state 70
+    GT     shift, and go to state 71
+    EQ     shift, and go to state 72
+    NE     shift, and go to state 73
+    OR     shift, and go to state 74
+    AND    shift, and go to state 75
+
+
+State 180
+
+   48 ifelse: IF BRACKET_L expr BRACKET_R stmt_block ELSE stmt_block •
+
+    $default  reduce using rule 48 (ifelse)
+
+
+State 181
+
+   52 dowhile: DO stmt_block WHILE BRACKET_L expr BRACKET_R SEMICOLON •
+
+    $default  reduce using rule 52 (dowhile)
+
+
+State 182
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA • expr BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE ID LET expr COMMA • expr COMMA expr BRACKET_R stmt_block
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 183
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 183
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr • BRACKET_R stmt_block
+   54    | FOR BRACKET_L INT_TYPE ID LET expr COMMA expr • COMMA expr BRACKET_R stmt_block
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    BRACKET_R  shift, and go to state 184
+    COMMA      shift, and go to state 185
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 184
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R • stmt_block
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_L  shift, and go to state 153
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall     go to state 41
+    cast        go to state 42
+    stmt        go to state 154
+    return      go to state 139
+    exprstmt    go to state 140
+    ifelse      go to state 141
+    while       go to state 142
+    stmt_block  go to state 186
+    dowhile     go to state 143
+    for         go to state 144
+    assign      go to state 145
+    varlet      go to state 146
+    var         go to state 43
+    expr        go to state 147
+    constants   go to state 45
+    floatval    go to state 46
+    intval      go to state 47
+    boolval     go to state 48
+
+
+State 185
+
+   54 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA • expr BRACKET_R stmt_block
+
+    BRACKET_L  shift, and go to state 33
+    MINUS      shift, and go to state 34
+    NOT        shift, and go to state 35
+    TRUEVAL    shift, and go to state 36
+    FALSEVAL   shift, and go to state 37
+    NUM        shift, and go to state 38
+    FLOAT      shift, and go to state 39
+    ID         shift, and go to state 40
+
+    funcall    go to state 41
+    cast       go to state 42
+    var        go to state 43
+    expr       go to state 187
+    constants  go to state 45
+    floatval   go to state 46
+    intval     go to state 47
+    boolval    go to state 48
+
+
+State 186
+
+   53 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block •
+
+    $default  reduce using rule 53 (for)
+
+
+State 187
+
+   54 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr • BRACKET_R stmt_block
+   65 expr: expr • PLUS expr
+   66     | expr • MINUS expr
+   67     | expr • STAR expr
+   68     | expr • SLASH expr
+   69     | expr • MOD expr
+   70     | expr • EQ expr
+   71     | expr • NE expr
+   72     | expr • LT expr
+   73     | expr • LE expr
+   74     | expr • GT expr
+   75     | expr • GE expr
+   76     | expr • AND expr
+   77     | expr • OR expr
+
+    BRACKET_R  shift, and go to state 188
+    MINUS      shift, and go to state 63
+    PLUS       shift, and go to state 64
+    STAR       shift, and go to state 65
+    SLASH      shift, and go to state 66
+    MOD        shift, and go to state 67
+    LE         shift, and go to state 68
+    LT         shift, and go to state 69
+    GE         shift, and go to state 70
+    GT         shift, and go to state 71
+    EQ         shift, and go to state 72
+    NE         shift, and go to state 73
+    OR         shift, and go to state 74
+    AND        shift, and go to state 75
+
+
+State 188
+
+   54 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R • stmt_block
+
+    BRACKET_L        shift, and go to state 33
+    CURLY_BRACKET_L  shift, and go to state 153
+    MINUS            shift, and go to state 34
+    NOT              shift, and go to state 35
+    TRUEVAL          shift, and go to state 36
+    FALSEVAL         shift, and go to state 37
+    RETURN           shift, and go to state 132
+    IF               shift, and go to state 133
+    WHILE            shift, and go to state 134
+    DO               shift, and go to state 135
+    FOR              shift, and go to state 136
+    NUM              shift, and go to state 38
+    FLOAT            shift, and go to state 39
+    ID               shift, and go to state 137
+
+    funcall     go to state 41
+    cast        go to state 42
+    stmt        go to state 154
+    return      go to state 139
+    exprstmt    go to state 140
+    ifelse      go to state 141
+    while       go to state 142
+    stmt_block  go to state 189
+    dowhile     go to state 143
+    for         go to state 144
+    assign      go to state 145
+    varlet      go to state 146
+    var         go to state 43
+    expr        go to state 147
+    constants   go to state 45
+    floatval    go to state 46
+    intval      go to state 47
+    boolval     go to state 48
+
+
+State 189
+
+   54 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block •
+
+    $default  reduce using rule 54 (for)

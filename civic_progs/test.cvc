@@ -1,5 +1,8 @@
-void foo(int p) {
-    int i = 1;
-    if (p > 1)
-        return;
+
+void func()
+{
+    int [10] i;
+    int [20,30] j;
+    int [4,5,6] k;
+    int[4, 4] mat = [[1,2,3,4], [1,2,3,4], [1,2,3,4], [1,2,3,4]];
 }

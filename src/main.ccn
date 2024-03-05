@@ -58,6 +58,10 @@ nodeset Decl = {GlobDef, GlobDecl, FunDef};
 
 nodeset Vars = {VarDecl, Var, VarLet};
 
+nodeset Block  {
+    nodes = {FunDef, VarDecl} | Stmt
+};
+
 nodeset Expr = {Cast, FunCall, Var, ArrExpr} | (Constants | Operations);
 
 nodeset Stmt = {Assign, ExprStmt, IfElse, While, DoWhile, For, Return};
@@ -161,10 +165,11 @@ node Cast {
     }
 };
 
-node FunDefs {
+
+node Blocks {
     children {
-        FunDef fundef { constructor, mandatory },
-        FunDefs next { constructor }
+        Block block { constructor, mandatory },
+        Blocks next { constructor }
     }
 };
 
@@ -181,11 +186,11 @@ node FunDef {
     }
 };
 
+
+
 node FunBody {
     children {
-        VarDecls decls { constructor },
-        FunDefs local_fundefs { constructor },
-        Stmts stmts { constructor }
+        Blocks blocks {constructor}
     }
 };
 
@@ -220,13 +225,13 @@ node For {
     },
 
     attributes {
-        string var
+        string var {constructor}
     }
 };
 
 node GlobDecl {
     children {
-        Ids dims
+        Ids dims {constructor}
     },
 
     attributes {
@@ -237,20 +242,20 @@ node GlobDecl {
 
 node GlobDef {
     children {
-        Exprs dims,
-        Expr init
+        Exprs dims {constructor},
+        Expr init {constructor}
     },
 
     attributes {
         string name { constructor },
         Type type { constructor },
-        bool export
+        bool export {constructor}
     }
 };
 
 node Param {
     children {
-        Ids dims
+        Ids dims {constructor}
     },
 
     attributes {
@@ -279,12 +284,6 @@ node VarDecl {
     }
 };
 
-node VarDecls {
-    children {
-        VarDecl vardecl { constructor, mandatory },
-        VarDecls next { constructor }
-    }
-};
 
 node Stmts {
     children {
@@ -323,7 +322,7 @@ node Monop {
 
 node VarLet {
     children {
-        Exprs indices
+        Exprs indices {constructor}
     },
 
     attributes {
@@ -333,7 +332,7 @@ node VarLet {
 
 node Var {
     children {
-        Exprs indices
+        Exprs indices {constructor}
     },
 
     attributes {
