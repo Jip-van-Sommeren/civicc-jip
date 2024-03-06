@@ -210,7 +210,7 @@ node_st *PRTfundef(node_st *node)
 node_st *PRTfunbody(node_st *node)
 {
     printf("Function block:\n");
-    TRAVopt(FUNBODY_BLOCKS(node));
+    TRAVopt(FUNBODY_VARDECLS(node));
     return node;
 }
 
@@ -310,7 +310,8 @@ node_st *PRTglobdecl(node_st *node)
     printf("%s %s;\n", typeStr, GLOBDECL_NAME(node));
     // Assuming dims is an optional child
     TRAVopt(GLOBDECL_DIMS(node));
-    printf(";\n");
+    TRAVopt(GLOBDECL_PARAMS(node));
+    printf("\n");
     return node;
 }
 
@@ -347,23 +348,56 @@ node_st *PRTglobdef(node_st *node)
 //     return node;
 // }
 
+// /**
+//  * @fn PRTvardecls
+//  */
+// node_st *PRTblocks(node_st *node)
+// {
+//     // Print the current function definition
+//     TRAVdo(BLOCKS_BLOCK(node));
+
+//     // If there is another function definition in the list, continue printing
+//     if (BLOCKS_NEXT(node) != NULL)
+//     {
+//         TRAVdo(BLOCKS_NEXT(node));
+//     }
+
+//     return node;
+// }
+
 /**
  * @fn PRTvardecls
  */
-node_st *PRTblocks(node_st *node)
+node_st *PRTvardecls(node_st *node)
 {
     // Print the current function definition
-    TRAVdo(BLOCKS_BLOCK(node));
+    TRAVdo(VARDECLS_VARDECL(node));
 
     // If there is another function definition in the list, continue printing
-    if (BLOCKS_NEXT(node) != NULL)
+    if (VARDECLS_NEXT(node) != NULL)
     {
-        TRAVdo(BLOCKS_NEXT(node));
+        TRAVdo(VARDECLS_NEXT(node));
     }
 
     return node;
 }
 
+/**
+ * @fn PRTvardecls
+ */
+node_st *PRTfundefs(node_st *node)
+{
+    // Print the current function definition
+    TRAVdo(FUNDEFS_FUNDEF(node));
+
+    // If there is another function definition in the list, continue printing
+    if (FUNDEFS_NEXT(node) != NULL)
+    {
+        TRAVdo(FUNDEFS_NEXT(node));
+    }
+
+    return node;
+}
 /**
  * @fn PRTparam
  */

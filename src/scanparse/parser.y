@@ -29,7 +29,6 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
  enum Type           ctype;
  node_st             *node;
 }
-
 %locations
 
 %token BRACKET_L BRACKET_R COMMA SEMICOLON CURLY_BRACKET_L CURLY_BRACKET_R SQUARE_BRACKET_L SQUARE_BRACKET_R
@@ -40,7 +39,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %token EXPORT RETURN IF ELSE WHILE DO FOR EXTERN
 
 %token <cint> NUM
-%token <cflt> FLOAT
+%token <cflt> FLOAT 
 %token <id> ID
 
 
@@ -54,9 +53,8 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %type <node> globdecl globdef funcall exprstmt for stmt_block var_decl_tail
 %type <node> ids
 %type <node> assign ifelse while dowhile return cast var compound_statement 
-%type <node> params_nonempty ids_nonempty exprs_nonempty blocks_nonempty
-%type <node> block blocks
-
+%type <node> params_nonempty ids_nonempty exprs_nonempty 
+%type <node> fundefs vardecls vardecls_nonempty fundefs_nonempty
 
 %left OR
 %left AND
@@ -67,6 +65,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %right NOT
 %right UMINUS
 %right THEN ELSE 
+%right CAST
 
 %start program
 
@@ -100,7 +99,7 @@ exprs:
        }
     |
        %empty 
-      {
+      { 
         $$ = NULL;
       }
      ;
@@ -155,7 +154,7 @@ funcall: ID BRACKET_L exprs BRACKET_R
       }
       ;
 
-cast: BRACKET_L ctype BRACKET_R expr
+cast: BRACKET_L ctype BRACKET_R expr %prec CAST
     {
       $$ = ASTcast($4, $2);
     }
@@ -177,7 +176,29 @@ decl:
       }
       ;
 
+fundefs:
+        fundefs_nonempty
+       {
+         $$ = $1;
+       }
+    |
+       %empty 
+      {
+        $$ = NULL;
+      }
+     ;
 
+
+fundefs_nonempty:
+    fundef
+    {
+      $$ = ASTfundefs($1, NULL);
+    }
+  | fundefs fundef
+  {
+    $$ = ASTfundefs($2, $1);
+  }
+  ;
 
 fundef:
         ctype ID BRACKET_L params BRACKET_R compound_statement
@@ -199,66 +220,55 @@ compound_statement:
     }
   ;
 
+//blocks:
+//        blocks_nonempty
+//       {
+//         $$ = $1;
+//       }
+//    |
+//       %empty
+//      {
+//        $$ = NULL;
+//      }
+//     ;
 
-blocks:
-        blocks_nonempty
-       {
-         $$ = $1;
-       }
-    |
-       %empty
-      {
-        $$ = NULL;
-      }
-     ;
+//blocks_nonempty:
+//    block
+//    {
+//      $$ = ASTblocks($1, NULL);
+//    }
+//  | blocks block
+//  {
+//    $$ = ASTblocks($2, $1);
+//  }
+//  ;
 
-
-blocks_nonempty:
-    block
-    {
-      $$ = ASTblocks($1, NULL);
-    }
-  | blocks block
-  {
-    $$ = ASTblocks($2, $1);
-  }
-  ;
-
-block: 
-      vardecl
-      {
-        $$ = $1;
-      }
-      |
-      fundef
-      {
-        $$ = $1;
-      }
-      |
-      stmt
-      {
-        $$ = $1;
-      }
+//block: 
+//      vardecl
+//      {
+//        $$ = $1;
+//      }
+//      |
+//      fundef
+//      {
+//        $$ = $1;
+//      }
+//      |
+//      stmt
+//      {
+//        $$ = $1;
+//      }
 
 funbody:
-    blocks
+    vardecls fundefs stmts
     {
-        $$ = ASTfunbody($1);
+        $$ = ASTfunbody($1, $2, $3);
     }
     ;
 
 
 
 
-//opt_init:
-//    LET expr { $$ = $2; }
-//    | %empty { $$ = NULL; }
-//    ;
-
-//opt_arr_init:
-//    EQUAL arr_expr { $$ = $2; }
-//    | /* empty */ { $$ = NULL; }
-//    ;
 
 globdef:
     EXPORT ctype ID SEMICOLON
@@ -284,8 +294,9 @@ globdef:
 
 
 globdecl:
-    EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON { $$ = ASTglobdecl($4, $6, $2); }
-    | EXTERN ctype ID SEMICOLON { $$ = ASTglobdecl(NULL, $3, $2); }
+    EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON { $$ = ASTglobdecl($4, NULL, $6, $2); }
+    | EXTERN ctype ID SEMICOLON { $$ = ASTglobdecl(NULL, NULL, $3, $2); }
+    | EXTERN ctype ID BRACKET_L params BRACKET_R SEMICOLON { $$ = ASTglobdecl(NULL, $5, $3, $2); }
 ;
 
 
@@ -444,7 +455,29 @@ assign: varlet LET expr SEMICOLON
           $$ = ASTassign($1, $3);
         }
        ;
+vardecls:
+        vardecls_nonempty
+       {
+         $$ = $1;
+       }
+    |
+       %empty 
+      {
+        $$ = NULL;
+      }
+     ;
 
+
+vardecls_nonempty:
+    vardecl
+    {
+      $$ = ASTvardecls($1, NULL);
+    }
+  | vardecls vardecl
+  {
+    $$ = ASTvardecls($2, $1);
+  }
+  ;
 
 vardecl:
     ctype ID var_decl_tail
@@ -484,45 +517,47 @@ var: ID
     ;
 
 
-
-expr: expr PLUS expr
-      { $$ = ASTbinop($1, $3, BO_add); }
-    | expr MINUS expr
-      { $$ = ASTbinop($1, $3, BO_sub); }
-    | expr STAR expr
-      { $$ = ASTbinop($1, $3, BO_mul); }
-    | expr SLASH expr
-      { $$ = ASTbinop($1, $3, BO_div); }
-    | expr MOD expr
-      { $$ = ASTbinop($1, $3, BO_mod); }
-    | expr EQ expr
-      { $$ = ASTbinop($1, $3, BO_eq); }
-    | expr NE expr
-      { $$ = ASTbinop($1, $3, BO_ne); }
-    | expr LT expr
-      { $$ = ASTbinop($1, $3, BO_lt); }
-    | expr LE expr
-      { $$ = ASTbinop($1, $3, BO_le); }
-    | expr GT expr
-      { $$ = ASTbinop($1, $3, BO_gt); }
-    | expr GE expr
-      { $$ = ASTbinop($1, $3, BO_ge); }
-    | expr AND expr
-      { $$ = ASTbinop($1, $3, BO_and); }
-    | expr OR expr
-      { $$ = ASTbinop($1, $3, BO_or); }
-    | NOT expr
-      { $$ = ASTmonop($2, MO_not); }
-    | MINUS expr %prec UMINUS
-      { $$ = ASTmonop($2, MO_neg); }
-    | cast
-    {
-      $$ = $1;
-   }
-    | constants
-      {
-        $$ = $1;
-      }
+expr:
+   expr PLUS expr
+     { $$ = ASTbinop($1, $3, BO_add); }
+   | expr MINUS expr
+     { $$ = ASTbinop($1, $3, BO_sub); }
+   | expr STAR expr
+     { $$ = ASTbinop($1, $3, BO_mul); }
+   | expr SLASH expr
+     { $$ = ASTbinop($1, $3, BO_div); }
+   | expr MOD expr
+     { $$ = ASTbinop($1, $3, BO_mod); }
+   | expr EQ expr
+     { $$ = ASTbinop($1, $3, BO_eq); }
+   | expr NE expr
+     { $$ = ASTbinop($1, $3, BO_ne); }
+   | expr LT expr
+     { $$ = ASTbinop($1, $3, BO_lt); }
+   | expr LE expr
+     { $$ = ASTbinop($1, $3, BO_le); }
+   | expr GT expr
+     { $$ = ASTbinop($1, $3, BO_gt); }
+   | expr GE expr
+     { $$ = ASTbinop($1, $3, BO_ge); }
+   | expr AND expr
+     { $$ = ASTbinop($1, $3, BO_and); }
+   | expr OR expr
+     { $$ = ASTbinop($1, $3, BO_or); }
+   | NOT expr
+     { $$ = ASTmonop($2, MO_not); }
+   | MINUS expr %prec UMINUS
+     { $$ = ASTmonop($2, MO_neg); }
+   | BRACKET_L expr BRACKET_R
+      { $$ = $2; }
+   | cast 
+   {
+     $$ = $1;
+  }
+   | constants
+     {
+       $$ = $1;
+     }
     | var
       {
         $$ = $1;

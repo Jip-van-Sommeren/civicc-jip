@@ -166,12 +166,6 @@ node Cast {
 };
 
 
-node Blocks {
-    children {
-        Block block { constructor, mandatory },
-        Blocks next { constructor }
-    }
-};
 
 node FunDef {
     children {
@@ -190,7 +184,9 @@ node FunDef {
 
 node FunBody {
     children {
-        Blocks blocks {constructor}
+        VarDecls vardecls {constructor},
+        FunDefs local_fundefs {constructor},
+        Stmts stmts {constructor}
     }
 };
 
@@ -231,7 +227,8 @@ node For {
 
 node GlobDecl {
     children {
-        Ids dims {constructor}
+        Ids dims {constructor},
+        Params params {constructor}
     },
 
     attributes {
@@ -268,6 +265,20 @@ node Params {
     children {
         Param param { constructor, mandatory },
         Params next { constructor }
+    }
+};
+
+node FunDefs {
+    children {
+        FunDef fundef { constructor, mandatory },
+        FunDefs next { constructor }
+    }
+};
+
+node VarDecls {
+    children {
+        VarDecl vardecl { constructor, mandatory },
+        VarDecls next { constructor }
     }
 };
 
