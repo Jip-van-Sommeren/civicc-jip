@@ -154,23 +154,6 @@ node_st *PRTcast(node_st *node)
     return node;
 }
 
-// /**
-//  * @fn PRTfunDefs
-//  */
-// node_st *PRTfundefs(node_st *node)
-// {
-//     // Print the current function definition
-//     TRAVdo(FUNDEFS_FUNDEF(node));
-
-//     // If there is another function definition in the list, continue printing
-//     if (FUNDEFS_NEXT(node) != NULL)
-//     {
-//         TRAVdo(FUNDEFS_NEXT(node));
-//     }
-
-//     return node;
-// }
-
 /**
  * @fn PRTfunDef
  */
@@ -205,12 +188,49 @@ node_st *PRTfundef(node_st *node)
 }
 
 /**
+ * @fn PRTfunDef
+ */
+node_st *PRTlocalfundef(node_st *node)
+{
+    // Directly integrate the type conversion logic
+    char *typeStr = "unknown";
+    switch (LOCALFUNDEF_TYPE(node))
+    {
+    case CT_int:
+        typeStr = "int";
+        break;
+    case CT_float:
+        typeStr = "float";
+        break;
+    case CT_bool:
+        typeStr = "bool";
+        break;
+    case CT_void:
+        typeStr = "void";
+        break;
+    case CT_NULL:
+        DBUG_ASSERT(false, "unknown type detected!");
+        // Add cases for other types as necessary
+    }
+
+    printf("Function Definition: %s\n", LOCALFUNDEF_NAME(node));
+    printf("Return Type: %s\n", typeStr);
+    TRAVopt(LOCALFUNDEF_BODY(node));
+    TRAVopt(LOCALFUNDEF_PARAMS(node));
+    return node;
+}
+
+/**
  * @fn PRTfunBody
  */
 node_st *PRTfunbody(node_st *node)
 {
     printf("Function block:\n");
     TRAVopt(FUNBODY_VARDECLS(node));
+
+    TRAVopt(FUNBODY_LOCAL_FUNDEFS(node));
+
+    TRAVopt(FUNBODY_STMTS(node));
     return node;
 }
 
@@ -331,39 +351,6 @@ node_st *PRTglobdef(node_st *node)
     printf(";\n");
     return node;
 }
-// /**
-//  * @fn PRTvardecls
-//  */
-// node_st *PRTvardecls(node_st *node)
-// {
-//     // Print the current function definition
-//     // TRAVdo(VARDECLS_VARDECL(node));
-
-//     // // If there is another function definition in the list, continue printing
-//     // if (VARDECLS_NEXT(node) != NULL)
-//     // {
-//     //     TRAVdo(VARDECLS_NEXT(node));
-//     // }
-
-//     return node;
-// }
-
-// /**
-//  * @fn PRTvardecls
-//  */
-// node_st *PRTblocks(node_st *node)
-// {
-//     // Print the current function definition
-//     TRAVdo(BLOCKS_BLOCK(node));
-
-//     // If there is another function definition in the list, continue printing
-//     if (BLOCKS_NEXT(node) != NULL)
-//     {
-//         TRAVdo(BLOCKS_NEXT(node));
-//     }
-
-//     return node;
-// }
 
 /**
  * @fn PRTvardecls
@@ -383,7 +370,7 @@ node_st *PRTvardecls(node_st *node)
 }
 
 /**
- * @fn PRTvardecls
+ * @fn PRTfundefs
  */
 node_st *PRTfundefs(node_st *node)
 {
