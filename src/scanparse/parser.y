@@ -54,7 +54,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %type <node> ids
 %type <node> assign ifelse while dowhile return cast var compound_statement 
 %type <node> params_nonempty ids_nonempty exprs_nonempty 
-%type <node> fundefs vardecls vardecls_nonempty fundefs_nonempty
+%type <node> fundefs vardecls localfundef
 
 %left OR
 %left AND
@@ -99,7 +99,7 @@ exprs:
        }
     |
        %empty 
-      { 
+      {
         $$ = NULL;
       }
      ;
@@ -176,29 +176,10 @@ decl:
       }
       ;
 
-fundefs:
-        fundefs_nonempty
-       {
-         $$ = $1;
-       }
-    |
-       %empty 
-      {
-        $$ = NULL;
-      }
-     ;
 
-
-fundefs_nonempty:
-    fundef
-    {
-      $$ = ASTfundefs($1, NULL);
-    }
-  | fundefs fundef
-  {
-    $$ = ASTfundefs($2, $1);
-  }
-  ;
+fundefs: localfundef fundefs {$$ = ASTfundefs($1, $2);}
+    | %empty {$$ = NULL;}
+    ;
 
 fundef:
         ctype ID BRACKET_L params BRACKET_R compound_statement
@@ -212,6 +193,12 @@ fundef:
         }
         ;
 
+localfundef:
+        ctype ID BRACKET_L params BRACKET_R compound_statement
+        {
+          $$ = ASTlocalfundef($6, $4, $2, $1);
+        }
+        ;
 
 compound_statement:
     CURLY_BRACKET_L funbody CURLY_BRACKET_R
@@ -220,53 +207,12 @@ compound_statement:
     }
   ;
 
-//blocks:
-//        blocks_nonempty
-//       {
-//         $$ = $1;
-//       }
-//    |
-//       %empty
-//      {
-//        $$ = NULL;
-//      }
-//     ;
-
-//blocks_nonempty:
-//    block
-//    {
-//      $$ = ASTblocks($1, NULL);
-//    }
-//  | blocks block
-//  {
-//    $$ = ASTblocks($2, $1);
-//  }
-//  ;
-
-//block: 
-//      vardecl
-//      {
-//        $$ = $1;
-//      }
-//      |
-//      fundef
-//      {
-//        $$ = $1;
-//      }
-//      |
-//      stmt
-//      {
-//        $$ = $1;
-//      }
-
 funbody:
     vardecls fundefs stmts
     {
         $$ = ASTfunbody($1, $2, $3);
     }
     ;
-
-
 
 
 
@@ -346,6 +292,7 @@ params_nonempty:
     $$ = ASTparams($3, $1);
   }
   ;
+
 
 
 stmt:
@@ -455,23 +402,12 @@ assign: varlet LET expr SEMICOLON
           $$ = ASTassign($1, $3);
         }
        ;
+
+
 vardecls:
-        vardecls_nonempty
-       {
-         $$ = $1;
-       }
-    |
-       %empty 
-      {
-        $$ = NULL;
-      }
-     ;
-
-
-vardecls_nonempty:
-    vardecl
+    %empty
     {
-      $$ = ASTvardecls($1, NULL);
+      $$ = NULL;
     }
   | vardecls vardecl
   {

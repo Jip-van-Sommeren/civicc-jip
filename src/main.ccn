@@ -58,10 +58,6 @@ nodeset Decl = {GlobDef, GlobDecl, FunDef};
 
 nodeset Vars = {VarDecl, Var, VarLet};
 
-nodeset Block  {
-    nodes = {FunDef, VarDecl} | Stmt
-};
-
 nodeset Expr = {Cast, FunCall, Var, ArrExpr} | (Constants | Operations);
 
 nodeset Stmt = {Assign, ExprStmt, IfElse, While, DoWhile, For, Return};
@@ -180,6 +176,19 @@ node FunDef {
     }
 };
 
+node LocalFunDef {
+    children {
+        FunBody body { constructor },
+        Params params { constructor }
+    },
+
+    attributes {
+        string name { constructor },
+        Type type { constructor }
+    }
+};
+
+
 
 
 node FunBody {
@@ -270,7 +279,7 @@ node Params {
 
 node FunDefs {
     children {
-        FunDef fundef { constructor, mandatory },
+        LocalFunDef fundef { constructor, mandatory },
         FunDefs next { constructor }
     }
 };
