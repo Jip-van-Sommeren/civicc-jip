@@ -32,6 +32,7 @@ add_executable(civicc ${FLEX_CivicLexer_OUTPUTS} ${BISON_CivicParser_OUTPUTS}
     src/main.c src/print/print.c src/scanparse/scanParse.c
     src/global/globals.c src/global/globals.h
 
+    src/symboltable/symboltable.c
     # Youre free to remove the demo directory and these entries.
 )
 
