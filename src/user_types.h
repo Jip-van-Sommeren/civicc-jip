@@ -4,5 +4,5 @@
 #include "symboltable/scopestack.h"
 
 typedef htable_st *htable_stptr;
-typedef ScopeStack *ScopeStackptr;
+typedef ScopeStack *scopeStackptr;
 // Add more types here if necessary

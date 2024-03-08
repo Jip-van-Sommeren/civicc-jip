@@ -8,9 +8,9 @@ node_st *ACprogram(node_st *node);
 
 void ACinit() { return; }
 
-void ACfini(node_st *root)
+void ACfini()
 {
-    ACprogram(root);
+    return;
 }
 
 node_st *ACbinop(node_st *node)
@@ -45,14 +45,8 @@ node_st *ACbinop(node_st *node)
 
 node_st *ACprogram(node_st *node)
 {
-    struct data_ac *data = DATA_AC_GET();
 
     // Transfer the counts from the traversal data to the Program node's attributes
-    PROGRAM_PLUSCOUNT(node) = data->plusCount;
-    PROGRAM_MINUSCOUNT(node) = data->minusCount;
-    PROGRAM_MULCOUNT(node) = data->mulCount;
-    PROGRAM_DIVCOUNT(node) = data->divCount;
-    PROGRAM_MODCOUNT(node) = data->modCount;
 
     // Continue traversal for any children of the Program node, if necessary
     TRAVchildren(node);

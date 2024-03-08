@@ -1,12 +1,2 @@
-
-void func(int b, int c, float f)
-{
-    int a = -2+10;
-    void f()
-    {
-    } 
-    void g()
-    {
-    } 
-}
+int a = 3;
 

@@ -44,7 +44,7 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
         return;
     }
 
-    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    // Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
 
     SymbolInfo *info = (SymbolInfo *)malloc(sizeof(SymbolInfo));
     if (!info)
@@ -57,8 +57,11 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
     info->type = strdup(type);
     info->declaredAtLine = declaredAtLine;
     info->isFunction = isFunction;
-    info->scopeLevel = currentScope->level; // Utilize the current scope level from the scope stack
+    // info->scopeLevel = currentScope->level; // Utilize the current scope level from the scope stack
+    info->scopeLevel = 1; // Utilize the current scope level from the scope stack
 
+    printf("%s name", info->name);
+    HTinsert(data->symbolTable, strdup(info->name), info);
     if (!HTinsert(data->symbolTable, info->name, info))
     {
         fprintf(stderr, "Failed to insert symbol into the symbol table.\n");
@@ -81,14 +84,36 @@ void ST_pushScopeLevel(struct data_st *data, Scope newScope)
     data->scopeStack->scopes[data->scopeStack->top] = newScope;
 }
 
-void STinit(struct data_st *data)
+void STinit()
 {
+    struct data_st *data = DATA_ST_GET();
     int initialCapacity = 10;
-    data->symbolTable = HTnew_String(128);                              // Initialize symbol table with 128 buckets
+    // Ensure data is not NULL
+    if (!data)
+    {
+        fprintf(stderr, "data_st is NULL in STinit.\n");
+        return;
+    }
+
+    // Initialize symbol table
+    data->symbolTable = HTnew_String(128);
+    if (data->symbolTable == NULL)
+    {
+        fprintf(stderr, "Symbol start table is uninitialized.\n");
+        return;
+    }
+
+    // Allocate memory for the scopeStack object itself before initializing its members
+    data->scopeStack = malloc(sizeof(ScopeStack));
+    if (!data->scopeStack)
+    {
+        fprintf(stderr, "Memory allocation failed for scopeStack in STinit.\n");
+        return;                                                         // Exit if allocation failed
+    }                                                                   // Initialize symbol table with 128 buckets
     data->scopeStack->scopes = malloc(sizeof(Scope) * initialCapacity); // Allocate for Scope structures
     data->scopeStack->capacity = initialCapacity;
     data->scopeStack->top = -1; // Indicates that the stack is empty
-    // Create a global scope at level 0 and push it onto the stack
+    // // Create a global scope at level 0 and push it onto the stack
     Scope globalScope = {0}; // Assuming global scope level is 0
     ST_pushScopeLevel(data, globalScope);
 }
@@ -111,9 +136,15 @@ int ST_currentScopeLevel(struct data_st *data)
     return -1; // Or another indication that there's no current scope
 }
 
-void STfini(struct data_st *data)
+void STfini()
 {
     // Iterate and cleanup symbol table
+    struct data_st *data = DATA_ST_GET();
+    if (data->symbolTable == NULL)
+    {
+        fprintf(stderr, "Symbol table is uninitialized.\n");
+        return;
+    }
     htable_iter_st *iter = HTiterate(data->symbolTable);
     while (iter != NULL)
     {
@@ -128,7 +159,13 @@ void STfini(struct data_st *data)
     }
     HTdelete(data->symbolTable); // Cleanup the hash table
 
-    // If the ScopeStack also contains complex structures, iterate and free those resources here
+    if (data->scopeStack != NULL)
+    {
+        // If Scope contains dynamically allocated fields, free them here
+        free(data->scopeStack->scopes);
+        free(data->scopeStack); // Assuming scopeStack itself was dynamically allocated
+        data->scopeStack = NULL;
+    }
 }
 
 /**
@@ -156,7 +193,6 @@ node_st *STvardecl(node_st *node)
     int isFunction = 1;
 
     insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
-
     return node;
 }
 
@@ -181,14 +217,13 @@ node_st *STfundef(node_st *node)
     int currentScopeLevel = ST_currentScopeLevel(data);
 
     char *identifier = FUNDEF_NAME(node);  // Extract function name
-    enum Type type = VARDECL_TYPE(node);   // Assuming VARDECL_TYPE extracts the variable's type
+    enum Type type = FUNDEF_TYPE(node);    // Assuming VARDECL_TYPE extracts the variable's type
     char *typestr = VarTypeToString(type); // Extract function return type
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 0;
-
+    printf("heretest");
     // Insert the function symbol into the symbol table with the current scope level
     insertSymbol(data, identifier, typestr, declaredAtLine, isFunction); // Assuming global scope for simplicity
-
     // Increment the scope level for the function body
     Scope newScope;
     newScope.level = currentScopeLevel + 1;
@@ -211,15 +246,14 @@ node_st *STlocalfundef(node_st *node)
     // Retrieve the current scope level from the data structure
     int currentScopeLevel = ST_currentScopeLevel(data);
 
-    char *identifier = FUNDEF_NAME(node);  // Extract function name
-    enum Type type = VARDECL_TYPE(node);   // Assuming VARDECL_TYPE extracts the variable's type
-    char *typestr = VarTypeToString(type); // Extract function return type
+    char *identifier = LOCALFUNDEF_NAME(node); // Extract function name
+    enum Type type = LOCALFUNDEF_TYPE(node);   // Assuming VARDECL_TYPE extracts the variable's type
+    char *typestr = VarTypeToString(type);     // Extract function return type
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 0;
 
     // Insert the function symbol into the symbol table with the current scope level
     insertSymbol(data, identifier, typestr, declaredAtLine, isFunction); // Assuming global scope for simplicity
-
     // Increment the scope level for the function body
     Scope newScope;
     newScope.level = currentScopeLevel + 1;
@@ -240,8 +274,8 @@ node_st *STglobdecl(node_st *node)
     struct data_st *data = DATA_ST_GET();
 
     // Extract the variable's name, type, and declaration line number
-    char *identifier = VARDECL_NAME(node); // Assuming VARDECL_NAME extracts the variable's name
-    enum Type type = VARDECL_TYPE(node);   // Assuming VARDECL_TYPE extracts the variable's type
+    char *identifier = GLOBDECL_NAME(node); // Assuming VARDECL_NAME extracts the variable's name
+    enum Type type = GLOBDECL_TYPE(node);   // Assuming VARDECL_TYPE extracts the variable's type
     char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node); // Assuming NODE_BLINE gets the line number from the node
     int isFunction = 1;
@@ -256,13 +290,12 @@ node_st *STglobdef(node_st *node)
     struct data_st *data = DATA_ST_GET();
 
     // Extract the variable's name, type, and declaration line number
-    char *identifier = VARDECL_NAME(node); // Assuming VARDECL_NAME extracts the variable's name
-    enum Type type = VARDECL_TYPE(node);
+    char *identifier = GLOBDEF_NAME(node); // Assuming VARDECL_NAME extracts the variable's name
+    enum Type type = GLOBDEF_TYPE(node);
     char *typestr = VarTypeToString(type); // Assuming VARDECL_TYPE extracts the variable's type
     int declaredAtLine = NODE_BLINE(node); // Assuming NODE_BLINE gets the line number from the node
     int isFunction = 1;
 
     insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
-
     return node;
 }

@@ -7,7 +7,7 @@
 start phase RootPhase {
     actions {
         pass SPdoScanParse;
-        SymbolTable;
+        SemanticAnalysis;
         print;
     }
 };
@@ -16,14 +16,20 @@ traversal Print {
     uid = PRT
 };
 
-traversal SymbolTable {
-    uid = ST,
-    nodes = {VarDecl, VarDecls, LocalFunDef, FunDefs, FunDef, GlobDef, GlobDecl},
-    travdata {
-        user htable_stptr symbolTable,
-        user ScopeStackptr scopeStack
+phase SemanticAnalysis {
+    actions {
+
+        traversal SymbolTable {
+            uid = ST,
+            nodes = {FunDef, FunDefs, LocalFunDef, VarDecl, VarDecls, GlobDecl, GlobDef},
+            travdata {
+                user htable_stptr symbolTable,
+                user scopeStackptr scopeStack
+            }
+        };
     }
 };
+
 
 /*****************************************************************************
  *                                                                           *
