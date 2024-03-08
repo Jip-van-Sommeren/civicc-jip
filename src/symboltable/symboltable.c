@@ -61,7 +61,7 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
     info->scopeLevel = 1; // Utilize the current scope level from the scope stack
 
     printf("%s name", info->name);
-    HTinsert(data->symbolTable, strdup(info->name), info);
+    HTinsert(data->symbolTable, info->name, info);
     if (!HTinsert(data->symbolTable, info->name, info))
     {
         fprintf(stderr, "Failed to insert symbol into the symbol table.\n");
@@ -81,6 +81,7 @@ void ST_pushScopeLevel(struct data_st *data, Scope newScope)
         data->scopeStack->capacity = newCapacity;
     }
     data->scopeStack->top++;
+    printf("scopelevel: %d \n", data->scopeStack->top);
     data->scopeStack->scopes[data->scopeStack->top] = newScope;
 }
 
@@ -297,5 +298,6 @@ node_st *STglobdef(node_st *node)
     int isFunction = 1;
 
     insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+
     return node;
 }
