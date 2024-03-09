@@ -18,10 +18,17 @@ traversal Print {
 
 phase SemanticAnalysis {
     actions {
-
         traversal SymbolTable {
             uid = ST,
             nodes = {FunDef, FunDefs, LocalFunDef, VarDecl, VarDecls, GlobDecl, GlobDef},
+            travdata {
+                user htable_stptr symbolTable,
+                user scopeStackptr scopeStack
+            }
+        };
+        traversal SemanticAnal {
+            uid = SA,
+            nodes = {Cast, FunCall, Var, ArrExpr, Float, Bool, Num, Binop, Monop, Exprs},
             travdata {
                 user htable_stptr symbolTable,
                 user scopeStackptr scopeStack

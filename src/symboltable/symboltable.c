@@ -8,10 +8,16 @@
 #include "string.h"
 #include "symboltable.h"
 #include "palm/dbug.h"
+#include "palm/ctinfo.h"
 
 static bool first_vardecls = false;
 static bool first_fundefs = false;
 
+// Example struct ctinfo and a mock function to demonstrate the concept
+
+/**
+ * @fn VarTypeToString
+ */
 char *VarTypeToString(enum Type type)
 {
     char *typeStr = "unknown";
@@ -34,6 +40,40 @@ char *VarTypeToString(enum Type type)
     }
     return typeStr;
 }
+
+/**
+ * @fn reportDoubleDeclarationError
+ */
+void reportDoubleDeclarationError(char *name, struct SymbolInfo *info)
+{
+    if (info != NULL)
+    {
+        CTI(CTI_ERROR, true, "Double declaration of '%s' declared at line %d", name, info->declaredAtLine);
+    }
+    else
+    {
+        CTI(CTI_ERROR, true, "Double declaration of '%s'", name);
+    }
+}
+
+/**
+ * @fn checkDecl
+ */
+bool checkDecl(struct data_st *data, char *name)
+{
+    SymbolInfo *info = HTlookup(data->symbolTable, name);
+    if (info != NULL)
+    {
+        reportDoubleDeclarationError(name, info);
+        CTIabortOnError();
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @fn insertSymbol
+ */
 void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLine, int isFunction)
 {
     if (!data || data->scopeStack->top < 0)
@@ -68,6 +108,9 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
     }
 }
 
+/**
+ * @fn ST_pushScopeLevel
+ */
 void ST_pushScopeLevel(struct data_st *data, Scope newScope)
 {
     if (data->scopeStack->top + 1 >= data->scopeStack->capacity)
@@ -81,6 +124,9 @@ void ST_pushScopeLevel(struct data_st *data, Scope newScope)
     data->scopeStack->scopes[data->scopeStack->top] = newScope;
 }
 
+/**
+ * @fn STinit
+ */
 void STinit()
 {
     struct data_st *data = DATA_ST_GET();
@@ -115,6 +161,9 @@ void STinit()
     ST_pushScopeLevel(data, globalScope);
 }
 
+/**
+ * @fn ST_popScopeLevel
+ */
 void ST_popScopeLevel(struct data_st *data)
 {
     if (data->scopeStack->top > -1)
@@ -124,6 +173,9 @@ void ST_popScopeLevel(struct data_st *data)
     // No need to free individual Scope structs since they're part of the array
 }
 
+/**
+ * @fn ST_currentScopeLevel
+ */
 int ST_currentScopeLevel(struct data_st *data)
 {
     if (data->scopeStack->top > -1)
@@ -133,6 +185,9 @@ int ST_currentScopeLevel(struct data_st *data)
     return -1;
 }
 
+/**
+ * @fn STfini
+ */
 void STfini()
 {
     // Iterate and cleanup symbol table
@@ -187,12 +242,16 @@ node_st *STvardecl(node_st *node)
     enum Type type = VARDECL_TYPE(node);
     char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
-    int isFunction = 1;
+    int isFunction = 0; // Assuming this should be 0 for variables
 
-    insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    // Check if the variable is already declared
+    if (!checkDecl(data, identifier))
+    {
+        // Only insert the symbol if it was not already declared
+        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    }
     return node;
 }
-
 /**
  * @fn STfundefs
  */
@@ -206,6 +265,9 @@ node_st *STfundefs(node_st *node)
     return node;
 }
 
+/**
+ * @fn STfundef
+ */
 node_st *STfundef(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
@@ -217,9 +279,14 @@ node_st *STfundef(node_st *node)
     enum Type type = FUNDEF_TYPE(node);
     char *typestr = VarTypeToString(type); // Extract function return type
     int declaredAtLine = NODE_BLINE(node);
-    int isFunction = 0;
+    int isFunction = 1;
+
+    if (!checkDecl(data, identifier))
+    {
+        // Only insert the symbol if it was not already declared
+        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    }
     // Insert the function symbol into the symbol table with the current scope level
-    insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
     // Increment the scope level for the function body
     Scope newScope;
     newScope.level = currentScopeLevel + 1;
@@ -233,6 +300,9 @@ node_st *STfundef(node_st *node)
     return node;
 }
 
+/**
+ * @fn STlocalfundef
+ */
 node_st *STlocalfundef(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
@@ -244,10 +314,14 @@ node_st *STlocalfundef(node_st *node)
     enum Type type = LOCALFUNDEF_TYPE(node);
     char *typestr = VarTypeToString(type); // Extract function return type
     int declaredAtLine = NODE_BLINE(node);
-    int isFunction = 0;
+    int isFunction = 1;
 
+    if (!checkDecl(data, identifier))
+    {
+        // Only insert the symbol if it was not already declared
+        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    }
     // Insert the function symbol into the symbol table with the current scope level
-    insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
     // Increment the scope level for the function body
     Scope newScope;
     newScope.level = currentScopeLevel + 1;
@@ -261,6 +335,9 @@ node_st *STlocalfundef(node_st *node)
     return node;
 }
 
+/**
+ * @fn STglobdecl
+ */
 node_st *STglobdecl(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
@@ -272,11 +349,18 @@ node_st *STglobdecl(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 1;
 
-    insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    if (!checkDecl(data, identifier))
+    {
+        // Only insert the symbol if it was not already declared
+        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    }
 
     return node;
 }
 
+/**
+ * @fn STglobdef
+ */
 node_st *STglobdef(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
@@ -286,9 +370,13 @@ node_st *STglobdef(node_st *node)
     enum Type type = GLOBDEF_TYPE(node);
     char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
-    int isFunction = 1;
+    int isFunction = 0;
 
-    insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    if (!checkDecl(data, identifier))
+    {
+        // Only insert the symbol if it was not already declared
+        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+    }
 
     return node;
 }
