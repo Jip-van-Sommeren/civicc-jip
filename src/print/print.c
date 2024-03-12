@@ -188,39 +188,6 @@ node_st *PRTfundef(node_st *node)
 }
 
 /**
- * @fn PRTfunDef
- */
-node_st *PRTlocalfundef(node_st *node)
-{
-    // Directly integrate the type conversion logic
-    char *typeStr = "unknown";
-    switch (LOCALFUNDEF_TYPE(node))
-    {
-    case CT_int:
-        typeStr = "int";
-        break;
-    case CT_float:
-        typeStr = "float";
-        break;
-    case CT_bool:
-        typeStr = "bool";
-        break;
-    case CT_void:
-        typeStr = "void";
-        break;
-    case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
-        // Add cases for other types as necessary
-    }
-
-    printf("Function Definition: %s\n", LOCALFUNDEF_NAME(node));
-    printf("Return Type: %s\n", typeStr);
-    TRAVopt(LOCALFUNDEF_BODY(node));
-    TRAVopt(LOCALFUNDEF_PARAMS(node));
-    return node;
-}
-
-/**
  * @fn PRTfunBody
  */
 node_st *PRTfunbody(node_st *node)

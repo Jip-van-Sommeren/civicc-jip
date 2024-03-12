@@ -6,8 +6,8 @@
 #include "ccngen/trav_data.h"
 #include "stdio.h"
 #include "string.h"
-#include "symboltable.h"
 #include "palm/dbug.h"
+#include "deepcopyhashtable.h"
 
 /**
  * @fn SAinit
@@ -22,7 +22,37 @@ void SAinit()
  */
 void SAfini()
 {
-    return;
+}
+
+node_st *SAprogram(node_st *node)
+{
+    TRAVchildren(node);
+    htable_st *deepCopy = PROGRAM_SYMBOLTABLE(node);
+    htable_iter_st *iter = HTiterate(deepCopy);
+    while (iter != NULL)
+    {
+        SymbolInfo *info = HTiterValue(iter);
+        printf("t%d: %s %s scope:%d \n", info->declaredAtLine, info->name, info->type, info->scopeLevel);
+        iter = HTiterateNext(iter);
+    }
+    freeDeepCopyHashTable(deepCopy);
+
+    return node;
+}
+
+node_st *SAfundef(node_st *node)
+{
+    htable_st *deepCopy = FUNDEF_SYMBOLTABLE(node);
+    htable_iter_st *iter = HTiterate(deepCopy);
+    while (iter != NULL)
+    {
+        SymbolInfo *info = HTiterValue(iter);
+        printf("f%d: %s %s scope:%d \n", info->declaredAtLine, info->name, info->type, info->scopeLevel);
+        iter = HTiterateNext(iter);
+    }
+    freeDeepCopyHashTable(deepCopy);
+    TRAVchildren(node);
+    return node;
 }
 
 node_st *SAbool(node_st *node)

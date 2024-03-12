@@ -5,8 +5,8 @@
 #include "ccngen/enum.h"
 #include "ccngen/trav_data.h"
 #include "stdio.h"
+#include "deepcopyhashtable.h"
 #include "string.h"
-#include "symboltable.h"
 #include "palm/dbug.h"
 #include "palm/ctinfo.h"
 
@@ -61,7 +61,9 @@ void reportDoubleDeclarationError(char *name, struct SymbolInfo *info)
  */
 bool checkDecl(struct data_st *data, char *name)
 {
-    SymbolInfo *info = HTlookup(data->symbolTable, name);
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    htable_st *currentSymbolTable = currentScope->symbolTable;
+    SymbolInfo *info = HTlookup(currentSymbolTable, name);
     if (info != NULL)
     {
         reportDoubleDeclarationError(name, info);
@@ -78,12 +80,11 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
 {
     if (!data || data->scopeStack->top < 0)
     {
-        // Error handling: No current scope or data_st is NULL
         fprintf(stderr, "No current scope available for symbol insertion.\n");
         return;
     }
-
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    htable_st *currentSymbolTable = currentScope->symbolTable;
 
     SymbolInfo *info = (SymbolInfo *)malloc(sizeof(SymbolInfo));
     if (!info)
@@ -96,32 +97,26 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
     info->type = strdup(type);
     info->declaredAtLine = declaredAtLine;
     info->isFunction = isFunction;
-    info->scopeLevel = currentScope->level; // Utilize the current scope level from the scope stack
+    info->scopeLevel = currentScope->level;
 
-    HTinsert(data->symbolTable, info->name, info);
-    if (!HTinsert(data->symbolTable, info->name, info))
+    if (!HTinsert(currentSymbolTable, info->name, info))
     {
-        fprintf(stderr, "Failed to insert symbol into the symbol table.\n");
-        free(info->name);
-        free(info->type);
-        free(info);
+        fprintf(stderr, "Failed to insert symbol '%s' into the symbol table.\n", name);
     }
 }
 
-/**
- * @fn ST_pushScopeLevel
- */
-void ST_pushScopeLevel(struct data_st *data, Scope newScope)
+void ST_pushScopeLevel(struct data_st *data)
 {
     if (data->scopeStack->top + 1 >= data->scopeStack->capacity)
     {
-        // Reallocation logic
+        // Reallocation logic for scopeStack
         int newCapacity = data->scopeStack->capacity * 2;
         data->scopeStack->scopes = realloc(data->scopeStack->scopes, sizeof(Scope) * newCapacity);
         data->scopeStack->capacity = newCapacity;
     }
     data->scopeStack->top++;
-    data->scopeStack->scopes[data->scopeStack->top] = newScope;
+    data->scopeStack->scopes[data->scopeStack->top].level = data->scopeStack->top;
+    data->scopeStack->scopes[data->scopeStack->top].symbolTable = HTnew_String(128); // Initialize a new symbol table for the new scope
 }
 
 /**
@@ -138,39 +133,56 @@ void STinit()
         return;
     }
 
-    // Initialize symbol table
-    data->symbolTable = HTnew_String(128);
-    if (data->symbolTable == NULL)
-    {
-        fprintf(stderr, "Symbol start table is uninitialized.\n");
-        return;
-    }
-
     // Allocate memory for the scopeStack object itself before initializing its members
     data->scopeStack = malloc(sizeof(ScopeStack));
     if (!data->scopeStack)
     {
         fprintf(stderr, "Memory allocation failed for scopeStack in STinit.\n");
-        return;                                                         // Exit if allocation failed
-    }                                                                   // Initialize symbol table with 128 buckets
+        return; // Exit if allocation failed
+    }
     data->scopeStack->scopes = malloc(sizeof(Scope) * initialCapacity); // Allocate for Scope structures
+    if (!data->scopeStack->scopes)
+    {
+        fprintf(stderr, "Memory allocation failed for scope structures in STinit.\n");
+        free(data->scopeStack); // Cleanup previously allocated memory
+        return;
+    }
     data->scopeStack->capacity = initialCapacity;
     data->scopeStack->top = -1; // Indicates that the stack is empty
-    // Create a global scope at level 0 and push it onto the stack
-    Scope globalScope = {0};
-    ST_pushScopeLevel(data, globalScope);
+
+    // Automatically create the global scope with its own symbol table
+    ST_pushScopeLevel(data);
 }
 
 /**
- * @fn ST_popScopeLevel
+ * @fn STvardecls
  */
+node_st *STprogram(node_st *node)
+{
+    struct data_st *data = DATA_ST_GET();
+
+    TRAVchildren(node);
+    htable_st *deepCopy = deepCopyHashTable(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
+    PROGRAM_SYMBOLTABLE(node) = deepCopy;
+    return node;
+}
+
 void ST_popScopeLevel(struct data_st *data)
 {
     if (data->scopeStack->top > -1)
     {
+        htable_iter_st *iter = HTiterate(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
+        while (iter != NULL)
+        {
+            SymbolInfo *info = HTiterValue(iter);
+            free(info->name);
+            free(info->type);
+            free(info);
+            iter = HTiterateNext(iter);
+        }
+        HTdelete(data->scopeStack->scopes[data->scopeStack->top].symbolTable); // Cleanup the symbol table of the current scope
         data->scopeStack->top--;
     }
-    // No need to free individual Scope structs since they're part of the array
 }
 
 /**
@@ -190,33 +202,22 @@ int ST_currentScopeLevel(struct data_st *data)
  */
 void STfini()
 {
-    // Iterate and cleanup symbol table
     struct data_st *data = DATA_ST_GET();
-    if (data->symbolTable == NULL)
+    while (data->scopeStack->top > -1)
     {
-        fprintf(stderr, "Symbol table is uninitialized.\n");
-        return;
+
+        ST_popScopeLevel(data);
     }
-    htable_iter_st *iter = HTiterate(data->symbolTable);
-    while (iter != NULL)
-    {
-        SymbolInfo *info = HTiterValue(iter);
-        printf("Name: %s, Type: %s, Declared at line: %d, Scopelevel: %d\n", info->name, info->type, info->declaredAtLine, info->scopeLevel);
-
-        free(info->name);
-        free(info->type);
-        free(info);
-
-        iter = HTiterateNext(iter);
-    }
-    HTdelete(data->symbolTable); // Cleanup the hash table
-
     if (data->scopeStack != NULL)
     {
-        // If Scope contains dynamically allocated fields, free them here
-        free(data->scopeStack->scopes);
-        free(data->scopeStack);
-        data->scopeStack = NULL;
+        // No need to iterate through scopes for symbol table cleanup if done elsewhere
+        free(data->scopeStack->scopes); // Free the scopes array
+        free(data->scopeStack);         // Free the scope stack itself
+        data->scopeStack = NULL;        // Safeguard
+    }
+    else
+    {
+        fprintf(stderr, "Scope stack was already uninitialized or never initialized.\n");
     }
 }
 
@@ -273,7 +274,6 @@ node_st *STfundef(node_st *node)
     struct data_st *data = DATA_ST_GET();
 
     // Retrieve the current scope level from the data structure
-    int currentScopeLevel = ST_currentScopeLevel(data);
 
     char *identifier = FUNDEF_NAME(node); // Extract function name
     enum Type type = FUNDEF_TYPE(node);
@@ -288,47 +288,12 @@ node_st *STfundef(node_st *node)
     }
     // Insert the function symbol into the symbol table with the current scope level
     // Increment the scope level for the function body
-    Scope newScope;
-    newScope.level = currentScopeLevel + 1;
-    ST_pushScopeLevel(data, newScope);
+    ST_pushScopeLevel(data);
 
     TRAVchildren(node);
 
-    // Once done processing the function body, decrement the scope level to exit the function's scope
-    ST_popScopeLevel(data);
-
-    return node;
-}
-
-/**
- * @fn STlocalfundef
- */
-node_st *STlocalfundef(node_st *node)
-{
-    struct data_st *data = DATA_ST_GET();
-
-    // Retrieve the current scope level from the data structure
-    int currentScopeLevel = ST_currentScopeLevel(data);
-
-    char *identifier = LOCALFUNDEF_NAME(node); // Extract function name
-    enum Type type = LOCALFUNDEF_TYPE(node);
-    char *typestr = VarTypeToString(type); // Extract function return type
-    int declaredAtLine = NODE_BLINE(node);
-    int isFunction = 1;
-
-    if (!checkDecl(data, identifier))
-    {
-        // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
-    }
-    // Insert the function symbol into the symbol table with the current scope level
-    // Increment the scope level for the function body
-    Scope newScope;
-    newScope.level = currentScopeLevel + 1;
-    ST_pushScopeLevel(data, newScope);
-
-    TRAVchildren(node);
-
+    htable_st *deepCopy = deepCopyHashTable(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
+    FUNDEF_SYMBOLTABLE(node) = deepCopy;
     // Once done processing the function body, decrement the scope level to exit the function's scope
     ST_popScopeLevel(data);
 

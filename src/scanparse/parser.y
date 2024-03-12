@@ -54,7 +54,7 @@ void AddLocToNode(node_st *node, void *begin_loc, void *end_loc);
 %type <node> ids
 %type <node> assign ifelse while dowhile return cast var compound_statement
 %type <node> params_nonempty ids_nonempty exprs_nonempty
-%type <node> fundefs vardecls localfundef
+%type <node> fundefs vardecls
 
 %left OR
 %left AND
@@ -125,7 +125,7 @@ decl: globdecl
     { $$ = $1;}
     ;
 
-fundefs: localfundef fundefs
+fundefs: fundef fundefs
        {$$ = ASTfundefs($1, $2);}
        | %empty
        {$$ = NULL;}
@@ -136,10 +136,6 @@ fundef: ctype ID BRACKET_L params BRACKET_R compound_statement
       | EXPORT ctype ID BRACKET_L params BRACKET_R compound_statement
       { $$ = ASTfundef($7, $5, $3, $2, true); AddLocToNode($$, &@1, &@$);}
       ;
-
-localfundef: ctype ID BRACKET_L params BRACKET_R compound_statement
-           { $$ = ASTlocalfundef($6, $4, $2, $1); AddLocToNode($$, &@1, &@$);}
-           ;
 
 compound_statement: CURLY_BRACKET_L funbody CURLY_BRACKET_R
                   { $$ = $2;}
@@ -267,10 +263,14 @@ var_decl_tail: SEMICOLON
 
 varlet: ID
       { $$ = ASTvarlet(NULL, $1); AddLocToNode($$, &@1, &@$);}
+      | ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R
+      { $$ = ASTvarlet($3, $1); AddLocToNode($$, &@1, &@$);}
       ;
 
 var: ID
    { $$ = ASTvar(NULL, $1); AddLocToNode($$, &@1, &@$);}
+   | ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R
+   { $$ = ASTvarlet($3, $1); AddLocToNode($$, &@1, &@$);}
    ;
 
 expr: expr PLUS expr

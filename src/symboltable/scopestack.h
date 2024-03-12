@@ -1,6 +1,7 @@
 typedef struct Scope
 {
     int level;
+    htable_st *symbolTable;
     // Other fields as necessary
 } Scope;
 

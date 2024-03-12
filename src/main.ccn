@@ -20,19 +20,17 @@ phase SemanticAnalysis {
     actions {
         traversal SymbolTable {
             uid = ST,
-            nodes = {FunDef, FunDefs, LocalFunDef, VarDecl, VarDecls, GlobDecl, GlobDef},
+            nodes = {Program,FunDef, FunDefs, VarDecl, VarDecls, GlobDecl, GlobDef},
             travdata {
-                user htable_stptr symbolTable,
                 user scopeStackptr scopeStack
             }
         };
         traversal SemanticAnal {
             uid = SA,
-            nodes = {Cast, FunCall, Var, ArrExpr, Float, Bool, Num, Binop, Monop, Exprs},
+            nodes = {Program, Cast, FunCall, FunDef, Var, ArrExpr, Float, Bool, Num, Binop, Monop, Exprs},
             travdata {
-                user htable_stptr symbolTable,
-                user scopeStackptr scopeStack
-            }
+            user htable_stptr symboltable
+        }
         };
     }
 };
@@ -101,7 +99,12 @@ nodeset Typed {
 
 // Link you need to adapt when working with the symbol tables.
 // I put it as a decl now, because an empty nodeset is not allowed.
-nodeset Link = Decl;
+nodeset Link {
+    nodes = Decl,
+    attributes {
+        user htable_stptr symbolTable
+    }
+};
 
 nodeset Linked {
     nodes = {FunCall, Var, VarLet},
@@ -119,8 +122,12 @@ nodeset Linked {
 root node Program {
     children {
         Decls decls { constructor, mandatory }
+    },
+    attributes {
+        user htable_stptr symbolTable
     }
 };
+
 
 node Decls {
     children {
@@ -191,28 +198,12 @@ node FunDef {
         FunBody body { constructor },
         Params params { constructor }
     },
-
     attributes {
         string name { constructor },
         Type type { constructor },
         bool export { constructor }
     }
 };
-
-node LocalFunDef {
-    children {
-        FunBody body { constructor },
-        Params params { constructor }
-    },
-
-    attributes {
-        string name { constructor },
-        Type type { constructor }
-    }
-};
-
-
-
 
 node FunBody {
     children {
@@ -302,7 +293,7 @@ node Params {
 
 node FunDefs {
     children {
-        LocalFunDef fundef { constructor, mandatory },
+        FunDef fundef { constructor, mandatory },
         FunDefs next { constructor }
     }
 };
@@ -367,7 +358,6 @@ node VarLet {
     children {
         Exprs indices {constructor}
     },
-
     attributes {
         string name { constructor }
     }
@@ -377,7 +367,6 @@ node Var {
     children {
         Exprs indices {constructor}
     },
-
     attributes {
         string name { constructor }
     }

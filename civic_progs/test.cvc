@@ -1,14 +1,10 @@
-
-void func(int b, int c, float f)
+int c = 5;
+int func(int b, int d, float f)
 {
-    int a = -2+10;
-    float a = 2.0;
-    void f()
-    {
-        int b = 3 + a;
-    } 
-    void g()
-    {
-    } 
+    int g = 8;
+    int foo(){
+        int z = 6;
+    }
+    return g + 4;
 }
 
