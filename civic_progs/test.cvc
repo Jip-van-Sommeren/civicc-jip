@@ -2,6 +2,7 @@ int c = 5;
 int func(int b, int d, float f)
 {
     int g = 8;
+    float g = 0.1;
     void foo(){
         int z = 6;
     }

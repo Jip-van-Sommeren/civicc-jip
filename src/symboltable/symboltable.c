@@ -9,7 +9,6 @@
 #include "string.h"
 #include "palm/dbug.h"
 #include "palm/ctinfo.h"
-#include "symboltable.h"
 
 static bool first_vardecls = false;
 static bool first_fundefs = false;
@@ -17,11 +16,11 @@ static bool first_fundefs = false;
 /**
  * @fn reportDoubleDeclarationError
  */
-void reportDoubleDeclarationError(char *name, struct SymbolInfo *info)
+void reportDoubleDeclarationError(char *name, node_st *entry)
 {
-    if (info != NULL)
+    if (entry != NULL)
     {
-        CTI(CTI_ERROR, true, "Double declaration of '%s' declared at line %d", name, info->declaredAtLine);
+        CTI(CTI_ERROR, true, "Double declaration of '%s' declared at line %d", name, SYMBOLENTRY_DECLAREDATLINE(entry));
     }
     else
     {
@@ -36,10 +35,10 @@ bool checkDecl(struct data_st *data, char *name)
 {
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     htable_st *currentSymbolTable = currentScope->symbolTable;
-    SymbolInfo *info = HTlookup(currentSymbolTable, name);
-    if (info != NULL)
+    node_st *entry = HTlookup(currentSymbolTable, name);
+    if (entry != NULL)
     {
-        reportDoubleDeclarationError(name, info);
+        reportDoubleDeclarationError(name, entry);
         CTIabortOnError();
         return true;
     }
@@ -59,20 +58,9 @@ void insertSymbol(struct data_st *data, char *name, enum Type type, int declared
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     htable_st *currentSymbolTable = currentScope->symbolTable;
 
-    SymbolInfo *info = (SymbolInfo *)malloc(sizeof(SymbolInfo));
-    if (!info)
-    {
-        fprintf(stderr, "Memory allocation failed for SymbolInfo.\n");
-        return;
-    }
+    node_st *newentry = ASTsymbolentry(strdup(name), type, declaredAtLine, currentScope->level, isFunction);
 
-    info->name = strdup(name);
-    info->type = type;
-    info->declaredAtLine = declaredAtLine;
-    info->isFunction = isFunction;
-    info->scopeLevel = currentScope->level;
-
-    if (!HTinsert(currentSymbolTable, info->name, info))
+    if (!HTinsert(currentSymbolTable, name, newentry))
     {
         fprintf(stderr, "Failed to insert symbol '%s' into the symbol table.\n", name);
     }
@@ -134,12 +122,9 @@ node_st *ST_popScopeLevel(struct data_st *data)
     node_st *symboltable = NULL;
     while (iter != NULL)
     {
-        SymbolInfo *info = HTiterValue(iter);
-        node_st *newentry = ASTsymbolentry(strdup(info->name), info->type, info->declaredAtLine, info->scopeLevel, info->isFunction);
-        printf("%d\n", info->type);
+        node_st *newentry = HTiterValue(iter);
         symboltable = ASTsymboltable(newentry, symboltable);
-        free(info->name);
-        free(info);
+
         iter = HTiterateNext(iter);
     }
     HTdelete(data->scopeStack->scopes[data->scopeStack->top].symbolTable); // Cleanup the symbol table of the current scope
@@ -217,7 +202,6 @@ node_st *STvardecl(node_st *node)
     // Extract the variable's name, type, and declaration line number
     char *identifier = VARDECL_NAME(node);
     enum Type type = VARDECL_TYPE(node);
-    // char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 0; // Assuming this should be 0 for variables
 

@@ -27,7 +27,6 @@ node_st *SAprogram(node_st *node)
 {
 
     TRAVopt(PROGRAM_DECLS(node));
-    int test = 3;
     TRAVsymbolTable(node);
     return node;
 }

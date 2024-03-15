@@ -20,7 +20,7 @@ phase SemanticAnalysis {
     actions {
         traversal SymbolTableMake {
             uid = ST,
-            nodes = {Program, FunDef, FunDefs, VarDecl, VarDecls, GlobDecl, GlobDef, FunCall},
+            nodes = {Program, FunDef, FunDefs, VarDecl, VarDecls, GlobDecl, GlobDef},
             travdata {
                 user scopeStackptr scopeStack
             }
