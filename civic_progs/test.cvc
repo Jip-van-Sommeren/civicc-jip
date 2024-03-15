@@ -2,9 +2,13 @@ int c = 5;
 int func(int b, int d, float f)
 {
     int g = 8;
-    int foo(){
+    void foo(){
         int z = 6;
     }
+    void bar(){
+        int x = 5;
+    }
+    bar();
     return g + 4;
 }
 

@@ -18,23 +18,19 @@ traversal Print {
 
 phase SemanticAnalysis {
     actions {
-        traversal SymbolTable {
+        traversal SymbolTableMake {
             uid = ST,
-            nodes = {Program,FunDef, FunDefs, VarDecl, VarDecls, GlobDecl, GlobDef},
+            nodes = {Program, FunDef, FunDefs, VarDecl, VarDecls, GlobDecl, GlobDef, FunCall},
             travdata {
                 user scopeStackptr scopeStack
             }
         };
         traversal SemanticAnal {
             uid = SA,
-            nodes = {Program, Cast, FunCall, FunDef, Var, ArrExpr, Float, Bool, Num, Binop, Monop, Exprs},
-            travdata {
-            user htable_stptr symboltable
-        }
+            nodes = {Program, Decls, Cast, FunCall, FunDef, Var, ArrExpr, Float, Bool, Num, Binop, Monop, Exprs, SymbolTable, SymbolEntry}
         };
-    }
+}
 };
-
 
 /*****************************************************************************
  *                                                                           *
@@ -100,10 +96,7 @@ nodeset Typed {
 // Link you need to adapt when working with the symbol tables.
 // I put it as a decl now, because an empty nodeset is not allowed.
 nodeset Link {
-    nodes = Decl,
-    attributes {
-        user htable_stptr symbolTable
-    }
+    nodes = {SymbolTable}
 };
 
 nodeset Linked {
@@ -121,10 +114,8 @@ nodeset Linked {
 
 root node Program {
     children {
+        SymbolTable symbolTable,
         Decls decls { constructor, mandatory }
-    },
-    attributes {
-        user htable_stptr symbolTable
     }
 };
 
@@ -133,6 +124,9 @@ node Decls {
     children {
         Decl decl { constructor, mandatory },
         Decls next { constructor }
+    },
+    attributes {
+        Program parent
     }
 };
 
@@ -195,6 +189,7 @@ node Cast {
 
 node FunDef {
     children {
+        SymbolTable symbolTable,
         FunBody body { constructor },
         Params params { constructor }
     },
@@ -323,6 +318,24 @@ node Stmts {
     children {
         Stmt stmt { constructor, mandatory },
         Stmts next { constructor }
+    }
+};
+
+node SymbolTable {
+    children {
+        SymbolEntry entry { constructor },
+        SymbolTable next { constructor }
+    }
+};
+
+node SymbolEntry {
+
+    attributes {
+        string name { constructor },
+        Type type { constructor },
+        int declaredAtLine { constructor },
+        int scopeLevel { constructor },
+        bool isFunction { constructor }
     }
 };
 

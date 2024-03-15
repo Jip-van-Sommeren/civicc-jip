@@ -12,6 +12,33 @@
 #include "ccngen/ast.h"
 #include "ccngen/trav.h"
 #include "palm/dbug.h"
+#include "ccngen/enum.h"
+
+/**
+ * @fn VarTypeToString
+ */
+char *VarTypeToString(enum Type type)
+{
+    char *typeStr = "unknown";
+    switch (type)
+    {
+    case CT_int:
+        typeStr = "int";
+        break;
+    case CT_float:
+        typeStr = "float";
+        break;
+    case CT_bool:
+        typeStr = "bool";
+        break;
+    case CT_void:
+        typeStr = "void";
+        break;
+    case CT_NULL:
+        DBUG_ASSERT(false, "unknown type detected!");
+    }
+    return typeStr;
+}
 
 /**
  * @fn PRTprogram
@@ -19,7 +46,8 @@
 node_st *PRTprogram(node_st *node)
 {
     printf("Program:\n");
-    TRAVopt(PROGRAM_DECLS(node));
+    TRAVdo(PROGRAM_SYMBOLTABLE(node));
+    TRAVdo(PROGRAM_DECLS(node));
     return node;
 }
 
@@ -184,6 +212,7 @@ node_st *PRTfundef(node_st *node)
     printf("Return Type: %s\n", typeStr);
     TRAVopt(FUNDEF_BODY(node));
     TRAVopt(FUNDEF_PARAMS(node));
+    TRAVopt(FUNDEF_SYMBOLTABLE(node));
     return node;
 }
 
@@ -336,6 +365,34 @@ node_st *PRTvardecls(node_st *node)
     return node;
 }
 
+/**
+ * @fn PRTsymboltable
+ */
+node_st *PRTsymboltable(node_st *node)
+{
+    // Print the current function definition
+    TRAVdo(SYMBOLTABLE_ENTRY(node));
+
+    // If there is another function definition in the list, continue printing
+    if (SYMBOLTABLE_NEXT(node) != NULL)
+    {
+        TRAVdo(SYMBOLTABLE_NEXT(node));
+    }
+
+    return node;
+}
+
+/**
+ * @fn PRTsymboltable
+ */
+node_st *PRTsymbolentry(node_st *node)
+{
+    // Print the current function definition
+    printf("Variable Declaration TEST: %s\n", SYMBOLENTRY_NAME(node));
+    char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
+    printf("Variable Type TEST: %s\n", typestr);
+    return node;
+}
 /**
  * @fn PRTfundefs
  */

@@ -1,45 +1,18 @@
 #include "palm/hash_table.h"
+#include "palm/memory.h"
 #include "ccn/ccn.h"
 #include "ccngen/ast.h"
 #include "ccngen/trav.h"
 #include "ccngen/enum.h"
 #include "ccngen/trav_data.h"
 #include "stdio.h"
-#include "deepcopyhashtable.h"
 #include "string.h"
 #include "palm/dbug.h"
 #include "palm/ctinfo.h"
+#include "symboltable.h"
 
 static bool first_vardecls = false;
 static bool first_fundefs = false;
-
-// Example struct ctinfo and a mock function to demonstrate the concept
-
-/**
- * @fn VarTypeToString
- */
-char *VarTypeToString(enum Type type)
-{
-    char *typeStr = "unknown";
-    switch (type)
-    {
-    case CT_int:
-        typeStr = "int";
-        break;
-    case CT_float:
-        typeStr = "float";
-        break;
-    case CT_bool:
-        typeStr = "bool";
-        break;
-    case CT_void:
-        typeStr = "void";
-        break;
-    case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
-    }
-    return typeStr;
-}
 
 /**
  * @fn reportDoubleDeclarationError
@@ -76,7 +49,7 @@ bool checkDecl(struct data_st *data, char *name)
 /**
  * @fn insertSymbol
  */
-void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLine, int isFunction)
+void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int isFunction)
 {
     if (!data || data->scopeStack->top < 0)
     {
@@ -94,7 +67,7 @@ void insertSymbol(struct data_st *data, char *name, char *type, int declaredAtLi
     }
 
     info->name = strdup(name);
-    info->type = strdup(type);
+    info->type = type;
     info->declaredAtLine = declaredAtLine;
     info->isFunction = isFunction;
     info->scopeLevel = currentScope->level;
@@ -154,35 +127,38 @@ void STinit()
     ST_pushScopeLevel(data);
 }
 
+node_st *ST_popScopeLevel(struct data_st *data)
+{
+
+    htable_iter_st *iter = HTiterate(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
+    node_st *symboltable = NULL;
+    while (iter != NULL)
+    {
+        SymbolInfo *info = HTiterValue(iter);
+        node_st *newentry = ASTsymbolentry(strdup(info->name), info->type, info->declaredAtLine, info->scopeLevel, info->isFunction);
+        printf("%d\n", info->type);
+        symboltable = ASTsymboltable(newentry, symboltable);
+        free(info->name);
+        free(info);
+        iter = HTiterateNext(iter);
+    }
+    HTdelete(data->scopeStack->scopes[data->scopeStack->top].symbolTable); // Cleanup the symbol table of the current scope
+    data->scopeStack->top--;
+
+    return symboltable;
+}
 /**
  * @fn STvardecls
  */
 node_st *STprogram(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
-
     TRAVchildren(node);
-    htable_st *deepCopy = deepCopyHashTable(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
-    PROGRAM_SYMBOLTABLE(node) = deepCopy;
-    return node;
-}
+    node_st *symboltable = ST_popScopeLevel(data);
 
-void ST_popScopeLevel(struct data_st *data)
-{
-    if (data->scopeStack->top > -1)
-    {
-        htable_iter_st *iter = HTiterate(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
-        while (iter != NULL)
-        {
-            SymbolInfo *info = HTiterValue(iter);
-            free(info->name);
-            free(info->type);
-            free(info);
-            iter = HTiterateNext(iter);
-        }
-        HTdelete(data->scopeStack->scopes[data->scopeStack->top].symbolTable); // Cleanup the symbol table of the current scope
-        data->scopeStack->top--;
-    }
+    PROGRAM_SYMBOLTABLE(node) = symboltable;
+
+    return node;
 }
 
 /**
@@ -241,7 +217,7 @@ node_st *STvardecl(node_st *node)
     // Extract the variable's name, type, and declaration line number
     char *identifier = VARDECL_NAME(node);
     enum Type type = VARDECL_TYPE(node);
-    char *typestr = VarTypeToString(type);
+    // char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 0; // Assuming this should be 0 for variables
 
@@ -249,7 +225,7 @@ node_st *STvardecl(node_st *node)
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+        insertSymbol(data, identifier, type, declaredAtLine, isFunction);
     }
     return node;
 }
@@ -277,14 +253,14 @@ node_st *STfundef(node_st *node)
 
     char *identifier = FUNDEF_NAME(node); // Extract function name
     enum Type type = FUNDEF_TYPE(node);
-    char *typestr = VarTypeToString(type); // Extract function return type
+    // char *typestr = VarTypeToString(type); // Extract function return type
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 1;
 
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+        insertSymbol(data, identifier, type, declaredAtLine, isFunction);
     }
     // Insert the function symbol into the symbol table with the current scope level
     // Increment the scope level for the function body
@@ -292,11 +268,10 @@ node_st *STfundef(node_st *node)
 
     TRAVchildren(node);
 
-    htable_st *deepCopy = deepCopyHashTable(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
-    FUNDEF_SYMBOLTABLE(node) = deepCopy;
     // Once done processing the function body, decrement the scope level to exit the function's scope
-    ST_popScopeLevel(data);
+    node_st *symboltable = ST_popScopeLevel(data);
 
+    FUNDEF_SYMBOLTABLE(node) = symboltable;
     return node;
 }
 
@@ -310,14 +285,14 @@ node_st *STglobdecl(node_st *node)
     // Extract the variable's name, type, and declaration line number
     char *identifier = GLOBDECL_NAME(node);
     enum Type type = GLOBDECL_TYPE(node);
-    char *typestr = VarTypeToString(type);
+    // char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 1;
 
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+        insertSymbol(data, identifier, type, declaredAtLine, isFunction);
     }
 
     return node;
@@ -333,14 +308,14 @@ node_st *STglobdef(node_st *node)
     // Extract the variable's name, type, and declaration line number
     char *identifier = GLOBDEF_NAME(node);
     enum Type type = GLOBDEF_TYPE(node);
-    char *typestr = VarTypeToString(type);
+    // char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
     int isFunction = 0;
 
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, typestr, declaredAtLine, isFunction);
+        insertSymbol(data, identifier, type, declaredAtLine, isFunction);
     }
 
     return node;
