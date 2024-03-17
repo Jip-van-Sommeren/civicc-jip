@@ -1,0 +1,12 @@
+void foo ( int a )
+{
+    void bar ( int b ) 
+    {
+        baz ( a , b );
+    }
+    void baz ( int c , int d )
+    {
+        bar ( c + d );
+    }
+}
+

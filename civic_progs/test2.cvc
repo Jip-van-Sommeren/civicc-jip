@@ -1,0 +1,11 @@
+void foo ( int a )
+{
+    void bar ( int b ) // local bar () coexists with global bar () below
+    {
+        bak ( a , b ); //  local baz () below,  no forward declaration needed
+    }
+    void baz ( int c , int d )
+    {
+        bar ( c + d ); // local bar () above
+    }
+}

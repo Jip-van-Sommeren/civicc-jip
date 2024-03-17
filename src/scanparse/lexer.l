@@ -106,7 +106,10 @@ int yycolumn = 1;
                                 }
                             }
 
-"//"                        { char c; while((c = input()) != '\n' && c != 0); /* Ignore single line comments */ }
+"//" {
+    char c;
+    while((c = input()) != '\n' && c != EOF); /* Ignore single line comments */
+}
 
 \n.*                       {
                              yycolumn = 1;

@@ -388,7 +388,7 @@ node_st *PRTsymboltable(node_st *node)
 node_st *PRTsymbolentry(node_st *node)
 {
     // Print the current function definition
-    printf("Variable Declaration TEST: %s\n", SYMBOLENTRY_NAME(node));
+    printf("Variable Declaration TEST: %s, scope: %d\n", SYMBOLENTRY_NAME(node), SYMBOLENTRY_SCOPELEVEL(node));
     char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
     printf("Variable Type TEST: %s\n", typestr);
     return node;
@@ -471,8 +471,8 @@ node_st *PRTparams(node_st *node)
  */
 node_st *PRTvardecl(node_st *node)
 {
-    printf("Variable Declaration: %s\n", VARDECL_NAME(node));
-    printf("Variable Type: %d\n", VARDECL_TYPE(node));
+    printf("%s", VarTypeToString(VARDECL_TYPE(node)));
+    printf(" %s", VARDECL_NAME(node));
     // Assuming dims and init are optional children
     TRAVopt(VARDECL_DIMS(node));
     if (VARDECL_INIT(node) != NULL)

@@ -20,9 +20,10 @@ phase SemanticAnalysis {
     actions {
         traversal SymbolTableMake {
             uid = ST,
-            nodes = {Program, FunDef, FunDefs, VarDecl, VarDecls, GlobDecl, GlobDef},
+            nodes = ({Program, FunDefs, VarDecl, VarDecls, Param} | Linked) | Decl,
             travdata {
-                user scopeStackptr scopeStack
+                user scopeStackptr scopeStack,
+                user htable_stptr unresolvedFuncall
             }
         };
         traversal SemanticAnal {
@@ -102,7 +103,7 @@ nodeset Link {
 nodeset Linked {
     nodes = {FunCall, Var, VarLet},
     attributes {
-        Link decl
+        SymbolEntry symbolEntry
     }
 };
 
@@ -329,7 +330,6 @@ node SymbolTable {
 };
 
 node SymbolEntry {
-
     attributes {
         string name { constructor },
         Type type { constructor },
