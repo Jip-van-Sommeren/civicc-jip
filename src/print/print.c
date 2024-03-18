@@ -212,7 +212,10 @@ node_st *PRTfundef(node_st *node)
     printf("Return Type: %s\n", typeStr);
     TRAVopt(FUNDEF_BODY(node));
     TRAVopt(FUNDEF_PARAMS(node));
+    printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
+    printf("-------------------------------------------------------------\n");
     TRAVopt(FUNDEF_SYMBOLTABLE(node));
+    printf("-------------------------------------------------------------\n");
     return node;
 }
 
@@ -378,7 +381,6 @@ node_st *PRTsymboltable(node_st *node)
     {
         TRAVdo(SYMBOLTABLE_NEXT(node));
     }
-
     return node;
 }
 
@@ -388,9 +390,8 @@ node_st *PRTsymboltable(node_st *node)
 node_st *PRTsymbolentry(node_st *node)
 {
     // Print the current function definition
-    printf("Variable Declaration TEST: %s, scope: %d\n", SYMBOLENTRY_NAME(node), SYMBOLENTRY_SCOPELEVEL(node));
     char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
-    printf("Variable Type TEST: %s\n", typestr);
+    printf("%-20s %-15s %-10d %-10d\n", SYMBOLENTRY_NAME(node), typestr, SYMBOLENTRY_SCOPELEVEL(node), SYMBOLENTRY_DECLAREDATLINE(node));
     return node;
 }
 /**

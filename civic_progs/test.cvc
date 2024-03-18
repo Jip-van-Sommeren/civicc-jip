@@ -4,10 +4,13 @@ int func(int b, int d, float f)
     int g = 8;
     void foo(){
         int z = 6;
+        return;
     }
     void bar(){
         int x = 5;
+        return;
     }
+ 
     bar();
     return g + 4;
 }

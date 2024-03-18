@@ -20,7 +20,7 @@ phase SemanticAnalysis {
     actions {
         traversal SymbolTableMake {
             uid = ST,
-            nodes = ({Program, FunDefs, VarDecl, VarDecls, Param} | Linked) | Decl,
+            nodes = ({Program, VarDecl, VarDecls, Param, Return} | Linked) | Decl,
             travdata {
                 user scopeStackptr scopeStack,
                 user htable_stptr unresolvedFuncall
@@ -28,7 +28,8 @@ phase SemanticAnalysis {
         };
         traversal SemanticAnal {
             uid = SA,
-            nodes = {Program, Decls, Cast, FunCall, FunDef, Var, ArrExpr, Float, Bool, Num, Binop, Monop, Exprs, SymbolTable, SymbolEntry}
+            nodes = {Program, Decls, Cast, FunCall, FunDef, Var, ArrExpr, Float, Bool, Return, Num, Binop, Monop, SymbolTable, SymbolEntry}
+
         };
 }
 };
@@ -46,6 +47,9 @@ enum Type {
         int, float, bool, void
     }
 };
+
+
+
 
 enum MonOpType {
     prefix = MO,
@@ -335,7 +339,7 @@ node SymbolEntry {
         Type type { constructor },
         int declaredAtLine { constructor },
         int scopeLevel { constructor },
-        bool isFunction { constructor }
+        int nodetype { constructor }
     }
 };
 

@@ -5,4 +5,5 @@
 
 typedef htable_st *htable_stptr;
 typedef ScopeStack *scopeStackptr;
+
 // Add more types here if necessary
