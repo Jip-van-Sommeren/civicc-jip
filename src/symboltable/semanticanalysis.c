@@ -7,6 +7,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "palm/dbug.h"
+#include "vartypetostring.h"
 
 #define TABLE_SIZE 128
 #define STACK_SIZE 3
@@ -123,12 +124,59 @@ enum Type getType(node_st *node)
     case NT_CAST:
         tmp = CAST_TYPE(node);
         break;
+    case NT_PARAM:
+        tmp = PARAM_TYPE(node);
+        break;
     default:
         tmp = 0;
         break;
     }
     return tmp;
 }
+
+char *getName(node_st *node)
+{
+    static char buffer[64];
+    char *tmp = NULL;
+    switch (NODE_TYPE(node))
+    {
+    case NT_BOOL:
+        tmp = BOOL_VAL(node) ? "true" : "false";
+
+        break;
+    case NT_FLOAT:
+        sprintf(buffer, "%e", FLOAT_VAL(node));
+        return buffer;
+    case NT_NUM:
+        sprintf(buffer, "%d", NUM_VAL(node));
+        return buffer;
+        // Add cases for other node types as needed
+
+    case NT_VAR:
+        tmp = SYMBOLENTRY_NAME(VAR_SYMBOLENTRY(node));
+        break;
+    case NT_VARLET:
+        tmp = SYMBOLENTRY_NAME(VARLET_SYMBOLENTRY(node));
+        break;
+    case NT_MONOP:
+        tmp = MonopToString(MONOP_OP((node)));
+        break;
+    case NT_BINOP:
+        tmp = BinopToString(BINOP_OP((node)));
+        break;
+    case NT_FUNCALL:
+        tmp = SYMBOLENTRY_NAME(FUNCALL_SYMBOLENTRY(node));
+        break;
+    case NT_PARAM:
+        tmp = PARAM_NAME(node);
+        break;
+    default:
+        tmp = 0;
+        break;
+    }
+    return tmp;
+}
+
 void SAinit()
 {
     return;
@@ -219,27 +267,44 @@ node_st *SAcast(node_st *node)
 node_st *SAfuncall(node_st *node)
 {
     TRAVchildren(node);
+    // Retrieve the list of expressions (arguments) passed in the function call
     node_st *exprs = FUNCALL_FUN_ARGS(node);
-    int count = 0;
-    if (exprs != NULL)
+    // Retrieve the entry from the symbol table for the function being called
+    node_st *entry = FUNCALL_SYMBOLENTRY(node);
+    // Retrieve the list of parameters defined for the function
+    node_st *params = SYMBOLENTRY_PARAMS(entry);
+
+    int countArgs = 0, countParams = 0;
+    enum Type argType, paramType;
+    // Iterate over both lists simultaneously
+    while (exprs != NULL || params != NULL)
     {
         TRAVdo(EXPRS_EXPR(exprs));
-        count++;
-        printf("input: %d type: %d\n", count, getType(EXPRS_EXPR(exprs)));
+        argType = getType(EXPRS_EXPR(exprs));
+        paramType = getType(PARAMS_PARAM(params));
 
-        // Directly update exprs to its next node to correctly move forward in the list
-        exprs = EXPRS_NEXT(exprs);
-
-        while (exprs != NULL)
+        countArgs++;
+        countParams++;
+        printf("argname: %s\n", getName(EXPRS_EXPR(exprs)));
+        if (argType != paramType)
         {
-            TRAVdo(EXPRS_EXPR(exprs));
-            count++;
-            printf("input: %d type: %d\n", count, getType(EXPRS_EXPR(exprs)));
-            // Move to the next set of expressions
+            printf("%d is of type %s, expected %s\n", countArgs, VarTypeToString(argType), VarTypeToString(paramType));
+        }
+        if (exprs != NULL)
+        {
             exprs = EXPRS_NEXT(exprs);
         }
+        if (params != NULL)
+        {
+            params = PARAMS_NEXT(params);
+        }
     }
-    printf("count: %d\n", count);
+    // Check if the number of arguments matches the number of parameters
+    if (countArgs != countParams)
+    {
+        printf("Argument count mismatch: Expected %d, got %d\n", countParams, countArgs);
+    }
+
     return node;
 }
 node_st *SAarrexpr(node_st *node)
@@ -255,11 +320,11 @@ node_st *SAreturn(node_st *node)
 
     if ((returnExpr != NULL && getType(returnExpr) == RETURN_TYPE(node)))
     {
-        printf("return type %d\n", getType(returnExpr));
+        printf("return type %s\n", VarTypeToString(getType(returnExpr)));
     }
     else if ((returnExpr == NULL && RETURN_TYPE(node) == CT_void))
     {
-        printf("return type %d\n", CT_void);
+        printf("return type %s\n", VarTypeToString(CT_void));
     }
     else
     {
