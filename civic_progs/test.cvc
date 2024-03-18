@@ -1,7 +1,7 @@
 int c = 5;
 int func(int b, int d, float f)
 {
-    int g = 8;
+    int g = d;
     void foo(){
         int z = 6;
         return;
@@ -12,6 +12,6 @@ int func(int b, int d, float f)
     }
  
     bar();
-    return g + 4;
+    return g + 4 + b;
 }
 

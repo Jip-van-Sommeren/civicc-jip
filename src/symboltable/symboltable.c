@@ -49,7 +49,7 @@ bool checkDecl(struct data_st *data, char *name)
  */
 void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype)
 {
-    printf("Inserting '%s' into the symbol table.\n", name);
+    printf("Inserting '%s' of type %d, into the symbol table.\n", name, type);
     if (!data || data->scopeStack->top < 0)
     {
         fprintf(stderr, "No current scope available for symbol insertion.\n");
@@ -218,15 +218,6 @@ node_st *STprogram(node_st *node)
     return node;
 }
 
-/**
- * @fn STvardecls
- */
-node_st *STvardecls(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
 node_st *STvardecl(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
@@ -243,6 +234,7 @@ node_st *STvardecl(node_st *node)
         // Only insert the symbol if it was not already declared
         insertSymbol(data, identifier, type, declaredAtLine, nodetype);
     }
+    TRAVchildren(node);
     return node;
 }
 
@@ -328,7 +320,7 @@ node_st *STglobdecl(node_st *node)
         // Only insert the symbol if it was not already declared
         insertSymbol(data, identifier, type, declaredAtLine, nodetype);
     }
-
+    TRAVchildren(node);
     return node;
 }
 
@@ -351,7 +343,7 @@ node_st *STglobdef(node_st *node)
         // Only insert the symbol if it was not already declared
         insertSymbol(data, identifier, type, declaredAtLine, nodetype);
     }
-
+    TRAVchildren(node);
     return node;
 }
 
@@ -362,9 +354,11 @@ node_st *STvar(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VAR_NAME(node);
+    printf("var name :%s\n", name);
     node_st *entry = findLink(data, name);
     if (entry != NULL)
     {
+        printf(" heree\n");
         VAR_SYMBOLENTRY(node) = entry;
         VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
     }

@@ -27,24 +27,6 @@ node_st *SAprogram(node_st *node)
     return node;
 }
 
-node_st *SAsymboltable(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAdecls(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAsymbolentry(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
 node_st *SAfundef(node_st *node)
 {
     TRAVchildren(node);
