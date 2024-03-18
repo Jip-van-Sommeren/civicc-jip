@@ -8,7 +8,6 @@ start phase RootPhase {
     actions {
         pass SPdoScanParse;
         SemanticAnalysis;
-        print;
     }
 };
 
@@ -336,7 +335,8 @@ node SymbolEntry {
         Type type { constructor },
         int declaredAtLine { constructor },
         int scopeLevel { constructor },
-        int nodetype { constructor }
+        int nodetype { constructor },
+        Params params {constructor}
     }
 };
 

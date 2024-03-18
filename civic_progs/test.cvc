@@ -13,7 +13,7 @@ int func(int b, int d, float f)
         return;
     }
  
-    bar(f, b, g);
+    bar(f, b, 3.0);
     return g + 4 + d;
 }
 
