@@ -6,12 +6,14 @@ int func(int b, int d, float f)
         int z = 6;
         return;
     }
-    void bar(){
-        int x = 5;
+    void bar(float n, int m, int p){
+        int x = 5 + m;
+        int h = 0.1 + n;
+        foo();
         return;
     }
  
-    bar();
-    return g + 4 + b;
+    bar(f, b, g);
+    return g + 4 + d;
 }
 

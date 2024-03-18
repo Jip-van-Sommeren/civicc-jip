@@ -129,9 +129,6 @@ node Decls {
     children {
         Decl decl { constructor, mandatory },
         Decls next { constructor }
-    },
-    attributes {
-        Program parent
     }
 };
 
