@@ -57,10 +57,19 @@ node_st *PRTprogram(node_st *node)
 node_st *PRTdecls(node_st *node)
 {
     TRAVdo(DECLS_DECL(node));
-    if (DECLS_NEXT(node) != NULL)
+
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *decls = DECLS_NEXT(node);
+
+    while (decls != NULL)
     {
-        TRAVdo(DECLS_NEXT(node));
+        TRAVdo(DECLS_DECL(decls));
+        printf(", ");
+        // Move to the next set of declessions
+        decls = DECLS_NEXT(decls);
     }
+
     return node;
 }
 
@@ -73,10 +82,15 @@ node_st *PRTexprs(node_st *node)
     TRAVdo(EXPRS_EXPR(node));
 
     // If there is another expression in the list, print a comma and continue printing
-    if (EXPRS_NEXT(node) != NULL)
+
+    node_st *exprs = EXPRS_NEXT(node);
+
+    while (exprs != NULL)
     {
+        TRAVdo(EXPRS_EXPR(exprs));
         printf(", ");
-        TRAVdo(EXPRS_NEXT(node));
+        // Move to the next set of expressions
+        exprs = EXPRS_NEXT(exprs);
     }
 
     return node;
@@ -100,13 +114,18 @@ node_st *PRTarrexpr(node_st *node)
 node_st *PRTids(node_st *node)
 {
     // Print the name of the identifier
-    printf("%s", IDS_NAME(node));
+    printf("id name: %s", IDS_NAME(node));
 
-    // If there is another identifier in the list, print a comma and continue printing
-    if (IDS_NEXT(node) != NULL)
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *ids = IDS_NEXT(node);
+
+    while (ids != NULL)
     {
+        printf("id name: %s", IDS_NAME(ids));
         printf(", ");
-        TRAVdo(IDS_NEXT(node));
+        // Move to the next set of idsessions
+        ids = IDS_NEXT(ids);
     }
 
     return node;
@@ -155,28 +174,8 @@ node_st *PRTfuncall(node_st *node)
  */
 node_st *PRTcast(node_st *node)
 {
-    // Directly integrate the type conversion logic
-    char *typeStr = "unknown";
-    switch (CAST_TYPE(node))
-    {
-    case CT_int:
-        typeStr = "int";
-        break;
-    case CT_float:
-        typeStr = "float";
-        break;
-    case CT_bool:
-        typeStr = "bool";
-        break;
-    case CT_void:
-        typeStr = "void";
-        break;
-    case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
-        // Add cases for other types as necessary
-    }
 
-    printf("Cast to %s: (", typeStr);
+    printf("Cast to %s: (", VarTypeToString(CAST_TYPE(node)));
     TRAVdo(CAST_EXPR(node));
     printf(")\n");
     return node;
@@ -188,28 +187,9 @@ node_st *PRTcast(node_st *node)
 node_st *PRTfundef(node_st *node)
 {
     // Directly integrate the type conversion logic
-    char *typeStr = "unknown";
-    switch (FUNDEF_TYPE(node))
-    {
-    case CT_int:
-        typeStr = "int";
-        break;
-    case CT_float:
-        typeStr = "float";
-        break;
-    case CT_bool:
-        typeStr = "bool";
-        break;
-    case CT_void:
-        typeStr = "void";
-        break;
-    case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
-        // Add cases for other types as necessary
-    }
 
     printf("Function Definition: %s\n", FUNDEF_NAME(node));
-    printf("Return Type: %s\n", typeStr);
+    printf("Return Type: %s\n", VarTypeToString(FUNDEF_TYPE(node)));
     TRAVopt(FUNDEF_BODY(node));
     TRAVopt(FUNDEF_PARAMS(node));
     printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
@@ -307,26 +287,8 @@ node_st *PRTfor(node_st *node)
  */
 node_st *PRTglobdecl(node_st *node)
 {
-    char *typeStr = "unknown";
-    switch (GLOBDECL_TYPE(node))
-    {
-    case CT_int:
-        typeStr = "int";
-        break;
-    case CT_float:
-        typeStr = "float";
-        break;
-    case CT_bool:
-        typeStr = "bool";
-        break;
-    case CT_void:
-        typeStr = "void";
-        break;
-    case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
-        // Add cases for other types as necessary
-    }
-    printf("%s %s;\n", typeStr, GLOBDECL_NAME(node));
+
+    printf("%s %s;\n", VarTypeToString(GLOBDECL_TYPE(node)), GLOBDECL_NAME(node));
     // Assuming dims is an optional child
     TRAVopt(GLOBDECL_DIMS(node));
     TRAVopt(GLOBDECL_PARAMS(node));
@@ -359,10 +321,16 @@ node_st *PRTvardecls(node_st *node)
     // Print the current function definition
     TRAVdo(VARDECLS_VARDECL(node));
 
-    // If there is another function definition in the list, continue printing
-    if (VARDECLS_NEXT(node) != NULL)
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *vardecls = VARDECLS_NEXT(node);
+
+    while (vardecls != NULL)
     {
-        TRAVdo(VARDECLS_NEXT(node));
+        TRAVdo(VARDECLS_VARDECL(vardecls));
+        printf(", ");
+        // Move to the next set of declessions
+        vardecls = VARDECLS_NEXT(vardecls);
     }
 
     return node;
@@ -376,11 +344,17 @@ node_st *PRTsymboltable(node_st *node)
     // Print the current function definition
     TRAVdo(SYMBOLTABLE_ENTRY(node));
 
-    // If there is another function definition in the list, continue printing
-    if (SYMBOLTABLE_NEXT(node) != NULL)
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *symboltable = SYMBOLTABLE_NEXT(node);
+
+    while (symboltable != NULL)
     {
-        TRAVdo(SYMBOLTABLE_NEXT(node));
+        TRAVdo(SYMBOLTABLE_ENTRY(symboltable));
+        // Move to the next set of declessions
+        symboltable = SYMBOLTABLE_NEXT(symboltable);
     }
+
     return node;
 }
 
@@ -402,10 +376,15 @@ node_st *PRTfundefs(node_st *node)
     // Print the current function definition
     TRAVdo(FUNDEFS_FUNDEF(node));
 
-    // If there is another function definition in the list, continue printing
-    if (FUNDEFS_NEXT(node) != NULL)
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *fundefs = FUNDEFS_NEXT(node);
+
+    while (fundefs != NULL)
     {
-        TRAVdo(FUNDEFS_NEXT(node));
+        TRAVdo(FUNDEFS_FUNDEF(fundefs));
+        // Move to the next set of declessions
+        fundefs = FUNDEFS_NEXT(fundefs);
     }
 
     return node;
@@ -415,28 +394,8 @@ node_st *PRTfundefs(node_st *node)
  */
 node_st *PRTparam(node_st *node)
 {
-    // Directly integrate the type conversion logic
-    char *typeStr = "unknown";
-    switch (PARAM_TYPE(node))
-    {
-    case CT_int:
-        typeStr = "int";
-        break;
-    case CT_float:
-        typeStr = "float";
-        break;
-    case CT_bool:
-        typeStr = "bool";
-        break;
-    case CT_void:
-        typeStr = "void";
-        break;
-    case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
-        // Add cases for other types as necessary
-    }
 
-    printf("Parameter: %s, Type: %s", PARAM_NAME(node), typeStr);
+    printf("Parameter: %s, Type: %s", PARAM_NAME(node), VarTypeToString(PARAM_TYPE(node)));
 
     // If the parameter has dimensions (for array types), print them.
     if (PARAM_DIMS(node) != NULL)
@@ -458,10 +417,15 @@ node_st *PRTparams(node_st *node)
     // Print the current function definition
     TRAVdo(PARAMS_PARAM(node));
 
-    // If there is another function definition in the list, continue printing
-    if (PARAMS_NEXT(node) != NULL)
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *params = PARAMS_NEXT(node);
+
+    while (params != NULL)
     {
-        TRAVdo(PARAMS_NEXT(node));
+        TRAVdo(PARAMS_PARAM(params));
+        // Move to the next set of declessions
+        params = PARAMS_NEXT(params);
     }
 
     return node;
@@ -491,10 +455,18 @@ node_st *PRTvardecl(node_st *node)
 node_st *PRTstmts(node_st *node)
 {
     TRAVdo(STMTS_STMT(node));
-    if (STMTS_NEXT(node) != NULL)
+
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *stmts = STMTS_NEXT(node);
+
+    while (stmts != NULL)
     {
-        TRAVdo(STMTS_NEXT(node));
+        TRAVdo(STMTS_STMT(stmts));
+        // Move to the next set of declessions
+        stmts = STMTS_NEXT(stmts);
     }
+
     return node;
 }
 
