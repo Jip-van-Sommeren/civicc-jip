@@ -7,7 +7,7 @@
  */
 char *VarTypeToString(enum Type type)
 {
-    char *tmp = NULL;
+    char *tmp;
     switch (type)
     {
     case CT_int:
@@ -30,7 +30,7 @@ char *VarTypeToString(enum Type type)
 
 char *BinopToString(enum BinOpType type)
 {
-    char *tmp = NULL;
+    char *tmp;
     switch (type)
     {
     case BO_add:
@@ -80,7 +80,7 @@ char *BinopToString(enum BinOpType type)
 
 char *MonopToString(enum MonOpType type)
 {
-    char *tmp = NULL;
+    char *tmp;
     switch (type)
     {
     case MO_not:

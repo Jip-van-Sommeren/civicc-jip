@@ -2,18 +2,19 @@ int c = 5;
 int func(int b, int d, float f)
 {
     int g = d;
+    int[4, 4] mat = [[1,2,3,4], [1,2,3,4], [1,2,3,4], [1,2,3,4]];
+
     void foo(){
         int z = 6;
         return;
     }
-    void bar(float n, int m, int p){
+    void bar(float n, int m, int [o, p] array){
         int x = 5 + m;
-        int h = 0.1 + n;
+        float h = 0.1 + n;
         foo();
         return;
     }
- 
-    bar(f, b, 3.0);
+    bar(f, b, 3);
     return g + 4 + d;
 }
 

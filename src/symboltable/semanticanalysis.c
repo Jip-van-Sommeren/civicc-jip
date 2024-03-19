@@ -8,9 +8,11 @@
 #include "string.h"
 #include "palm/dbug.h"
 #include "vartypetostring.h"
+#include "palm/ctinfo.h"
 
 #define TABLE_SIZE 128
 #define STACK_SIZE 3
+
 bool getMonOpResultType(enum MonOpType op, enum Type operandType)
 {
     switch (op)
@@ -177,6 +179,198 @@ char *getName(node_st *node)
     return tmp;
 }
 
+void returnTypeError(node_st *returnExpr, node_st *returnNode)
+{
+    if (returnExpr == NULL)
+    {
+        CTI(CTI_ERROR, true, "return type void, expected type %s\n", VarTypeToString(RETURN_TYPE(returnNode)));
+    }
+
+    else
+    {
+        CTI(CTI_ERROR, true, "return type %s, expected type %s\n", VarTypeToString(getType(returnExpr)), VarTypeToString(RETURN_TYPE(returnNode)));
+    }
+    CTIabortOnError();
+}
+
+void paramTypeError(node_st *expr, node_st *param)
+{
+    CTI(CTI_ERROR, true, "arg %s is type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(param)));
+    CTIabortOnError();
+}
+
+void paramLengthError(int countArgs, int countParams, char *name)
+{
+    CTI(CTI_ERROR, true, "%s got %d arguments, expected %d\n", name, countArgs, countParams);
+    CTIabortOnError();
+}
+
+void castTypeError()
+{
+    CTI(CTI_ERROR, true, "cannot cast to void type\n");
+    CTIabortOnError();
+}
+
+void binopTypeError(enum Type typeLeft, enum Type typeRight, enum BinOpType op)
+{
+    CTI(CTI_ERROR, true, "cannot perform %s on type %s and %s\n", BinopToString(op), VarTypeToString(typeLeft), VarTypeToString(typeRight));
+    CTIabortOnError();
+}
+
+void monopTypeError(enum Type type, enum MonOpType op)
+{
+    CTI(CTI_ERROR, true, "%s invalid for type %s\n", MonopToString(op), VarTypeToString(type));
+    CTIabortOnError();
+}
+
+void vardeclTypeError(node_st *init, node_st *node)
+{
+    CTI(CTI_ERROR, true, "%s declared as type %s, value is of type %s\n", VARDECL_NAME(node), VarTypeToString(VARDECL_TYPE(node)), VarTypeToString(getType(init)));
+    CTIabortOnError();
+}
+
+void vardeclDimsError(node_st *expr)
+{
+    CTI(CTI_ERROR, true, "array dimensions can only declared with type int not with type %s\n", VarTypeToString(getType(expr)));
+    CTIabortOnError();
+}
+
+void arrayTypeError(enum Type exprType, enum Type expectedType)
+{
+    CTI(CTI_ERROR, true, "array element is of type %s, expected type %s", VarTypeToString(exprType), VarTypeToString(expectedType));
+    CTIabortOnError();
+}
+
+void funcallInputError(int argDim, int paramDim, enum Type argType, enum Type paramType)
+{
+    CTI(CTI_ERROR, true, "expected %s [%d] but argument is of type %s [%d]", VarTypeToString(paramType), paramDim, VarTypeToString(argType), argDim);
+    CTIabortOnError();
+}
+
+void incorrectDimsArrayError()
+{
+    CTI(CTI_ERROR, true, "array expression does not match declared dimensions");
+    CTIabortOnError();
+}
+
+int countArrayDimensions(node_st *arrExpr)
+{
+    if (NODE_TYPE(arrExpr) != NT_ARREXPR)
+    {
+        // Not an ArrExpr, return 0 as this node does not contribute to dimensions.
+        return 0;
+    }
+
+    // Get the first list of expressions within the ArrExpr node.
+    node_st *exprList = ARREXPR_EXPRS(arrExpr);
+    if (exprList == NULL)
+    {
+        // Empty list, so this is a 1-dimensional array with 0 elements.
+        return 1;
+    }
+
+    node_st *firstExpr = EXPRS_EXPR(exprList);
+    if (firstExpr == NULL || NODE_TYPE(firstExpr) != NT_ARREXPR)
+    {
+        // The list contains non-ArrExpr elements, indicating this is a 1D array.
+        return 1;
+    }
+
+    // The first element of the list is an ArrExpr, indicating that this is at least a 2D array.
+    // Recursively count the dimensions of the first ArrExpr in the list to handle nested arrays.
+    return 1 + countArrayDimensions(firstExpr);
+}
+
+int checkParamDimension(node_st *dims)
+{
+    int dimCount = 0;
+    while (dims != NULL)
+    {
+        dimCount++;
+        dims = IDS_NEXT(dims);
+    }
+    return dimCount;
+}
+
+bool isExprList(node_st *node)
+{
+    // Check if the node type is an ArrExpr, indicating a list of expressions.
+    return NODE_TYPE(node) == NT_ARREXPR;
+}
+
+bool checkExprList(node_st *exprs, int expectedCount, enum Type type)
+{
+    int count = 0;
+    while (exprs != NULL)
+    {
+        count++;
+        if (getType(EXPRS_EXPR(exprs)) != type)
+        {
+            arrayTypeError(getType(EXPRS_EXPR(exprs)), type);
+        }
+        exprs = EXPRS_NEXT(exprs); // Traverse through the linked list of expressions.
+    }
+    return count == expectedCount;
+}
+
+bool checkInitializer(node_st *init, int expectedDims[], int currentDim, int totalDims, enum Type type)
+{
+    // Base case: if we've processed all dimensions, there should be no more initializers.
+    if (currentDim >= totalDims)
+    {
+        return false;
+    }
+
+    if (isExprList(init))
+    {
+        node_st *exprList = ARREXPR_EXPRS(init); // Get the list of expressions within the ArrExpr node.
+
+        if (currentDim == totalDims - 1)
+        {
+            // We're at the last dimension, so we expect a flat list of expressions.
+            return checkExprList(exprList, expectedDims[currentDim], type);
+        }
+        else
+        {
+            // Nested list case: each element in the list should itself be a list matching the next dimension.
+            int count = 0;
+            while (exprList != NULL)
+            {
+                node_st *expr = EXPRS_EXPR(exprList); // Get the current expression, which should be an ArrExpr.
+                if (!isExprList(expr) || !checkInitializer(expr, expectedDims, currentDim + 1, totalDims, type))
+                {
+                    return false; // Nested list doesn't match expected dimensions or is not a list.
+                }
+                count++;
+                exprList = EXPRS_NEXT(exprList); // Move to the next expression in the list.
+            }
+            return count == expectedDims[currentDim]; // Ensure the count matches the expected dimension size.
+        }
+    }
+    return false; // If init is not an expression list, it's an invalid initializer for an array.
+}
+
+bool checkArrayDimensions(node_st *dims, node_st *init, enum Type type)
+{
+    // Step 1: Extract expected dimensions from dims list.
+    int expectedDims[2]; // 2D max array
+    int dimCount = 0;
+    while (dims != NULL)
+    {
+        TRAVdo(EXPRS_EXPR(dims)); // Traverse the expression to do any necessary analysis on it
+        if (getType(EXPRS_EXPR(dims)) != CT_int)
+        {
+            vardeclDimsError(EXPRS_EXPR(dims));
+        }
+        // reuse dimcount for array indexing
+        expectedDims[dimCount++] = NUM_VAL(EXPRS_EXPR(dims));
+        dims = EXPRS_NEXT(dims); // Assuming you have a way to iterate to the next dimension.
+    }
+
+    // Step 2: Check the initializer against expected dimensions.
+    return checkInitializer(init, expectedDims, 0, dimCount, type);
+}
+
 void SAinit()
 {
     return;
@@ -185,42 +379,6 @@ void SAinit()
 void SAfini()
 {
     return;
-}
-
-node_st *SAprogram(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAfundef(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAbool(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAfloat(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAnum(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
-}
-
-node_st *SAvar(node_st *node)
-{
-    TRAVchildren(node);
-    return node;
 }
 
 node_st *SAmonop(node_st *node)
@@ -233,7 +391,7 @@ node_st *SAmonop(node_st *node)
     }
     else
     {
-        printf("incorrect monop operation");
+        monopTypeError(type, MONOP_OP(node));
     }
     return node;
 }
@@ -252,7 +410,7 @@ node_st *SAbinop(node_st *node)
     }
     else
     {
-        printf("incorrect types here!\n");
+        binopTypeError(typeLeft, typeRight, BINOP_OP(node));
     }
 
     return node;
@@ -260,6 +418,10 @@ node_st *SAbinop(node_st *node)
 
 node_st *SAcast(node_st *node)
 {
+    if (CAST_TYPE(node) == CT_void)
+    {
+        castTypeError();
+    }
     TRAVchildren(node);
     return node;
 }
@@ -282,13 +444,21 @@ node_st *SAfuncall(node_st *node)
         TRAVdo(EXPRS_EXPR(exprs));
         argType = getType(EXPRS_EXPR(exprs));
         paramType = getType(PARAMS_PARAM(params));
+        if (PARAM_DIMS(PARAMS_PARAM(params)) != NULL)
+        {
+            int argDim = countArrayDimensions(EXPRS_EXPR(exprs));
+            int paramDim = checkParamDimension(PARAM_DIMS(PARAMS_PARAM(params)));
+            if (argDim != paramDim)
+            {
+                funcallInputError(argDim, paramDim, argType, paramType);
+            }
+        }
 
         countArgs++;
         countParams++;
-        printf("argname: %s\n", getName(EXPRS_EXPR(exprs)));
         if (argType != paramType)
         {
-            printf("%d is of type %s, expected %s\n", countArgs, VarTypeToString(argType), VarTypeToString(paramType));
+            paramTypeError(EXPRS_EXPR(exprs), PARAMS_PARAM(params));
         }
         if (exprs != NULL)
         {
@@ -302,14 +472,28 @@ node_st *SAfuncall(node_st *node)
     // Check if the number of arguments matches the number of parameters
     if (countArgs != countParams)
     {
-        printf("Argument count mismatch: Expected %d, got %d\n", countParams, countArgs);
+        paramLengthError(countArgs, countParams, FUNCALL_NAME(node));
     }
 
     return node;
 }
-node_st *SAarrexpr(node_st *node)
+
+node_st *SAvardecl(node_st *node)
 {
     TRAVchildren(node);
+    node_st *init = VARDECL_INIT(node);
+    node_st *dims = VARDECL_DIMS(node);
+    enum Type type = VARDECL_TYPE(node);
+    if (dims == NULL && init != NULL && (VARDECL_TYPE(node) != getType(init)))
+    {
+        vardeclTypeError(init, node);
+    }
+
+    if (dims != NULL && !checkArrayDimensions(dims, init, type))
+    {
+        incorrectDimsArrayError();
+    }
+
     return node;
 }
 
@@ -318,18 +502,18 @@ node_st *SAreturn(node_st *node)
     TRAVchildren(node);
     node_st *returnExpr = RETURN_EXPR(node);
 
-    if ((returnExpr != NULL && getType(returnExpr) == RETURN_TYPE(node)))
+    // Check for a correct return type: either non-void with a matching type or void with no return expression
+    if (!((returnExpr != NULL && getType(returnExpr) == RETURN_TYPE(node)) ||
+          (returnExpr == NULL && RETURN_TYPE(node) == CT_void)))
     {
-        printf("return type %s\n", VarTypeToString(getType(returnExpr)));
-    }
-    else if ((returnExpr == NULL && RETURN_TYPE(node) == CT_void))
-    {
-        printf("return type %s\n", VarTypeToString(CT_void));
-    }
-    else
-    {
-        printf("invalid return type\n");
+        returnTypeError(returnExpr, node);
     }
 
+    return node;
+}
+
+node_st *SAassign(node_st *node)
+{
+    TRAVchildren(node);
     return node;
 }

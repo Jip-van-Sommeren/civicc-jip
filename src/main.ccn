@@ -25,9 +25,9 @@ phase SemanticAnalysis {
                 user htable_stptr unresolvedFuncall
             }
         };
-        traversal SemanticAnal {
+        traversal SemanticAnalysisTraversal {
             uid = SA,
-            nodes = {Program, Cast, FunCall, FunDef, Var, ArrExpr, Float, Bool, Return, Num, Binop, Monop}
+            nodes = {Cast, VarDecl, FunCall, Return, Binop, Monop, Assign}
 
         };
 }
