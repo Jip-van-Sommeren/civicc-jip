@@ -50,6 +50,7 @@ bool checkDecl(struct data_st *data, char *name)
  */
 void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, node_st *params)
 {
+    printf("inserting %s into table! \n", name);
     if (!data || data->scopeStack->top < 0)
     {
         fprintf(stderr, "No current scope available for symbol insertion.\n");
@@ -219,6 +220,7 @@ node_st *STprogram(node_st *node)
 
 node_st *STvardecl(node_st *node)
 {
+
     struct data_st *data = DATA_ST_GET();
 
     // Extract the variable's name, type, and declaration line number
@@ -230,7 +232,8 @@ node_st *STvardecl(node_st *node)
     node_st *dims = NULL;
     if (VARDECL_DIMS(node) != NULL)
     {
-        dims = exprsToExprsNode(VARDECL_DIMS(node));
+        // we need to make a new node because it symbol entry child
+        dims = VARDECL_DIMS(node);
     }
 
     // Check if the variable is already declared
@@ -284,7 +287,7 @@ node_st *STfundef(node_st *node)
     ST_pushScopeLevel(data, type);
 
     TRAVparams(node);
-    TRAVbody(node);
+    TRAVdo(FUNDEF_BODY(node));
 
     // Once done processing the function body, decrement the scope level to exit the function's scope
     node_st *symboltable = ST_popScopeLevel(data);
@@ -305,10 +308,6 @@ node_st *STparam(node_st *node)
     int nodetype = NODE_TYPE(node);
 
     node_st *dims = NULL;
-    if (PARAM_DIMS(node) != NULL)
-    {
-        dims = idsToExprsNode(PARAM_DIMS(node));
-    }
 
     // Only insert the symbol if it was not already declared
     insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, NULL);
@@ -329,10 +328,7 @@ node_st *STglobdecl(node_st *node)
     int nodetype = NODE_TYPE(node);
 
     node_st *dims = NULL;
-    if (GLOBDECL_DIMS(node) != NULL)
-    {
-        dims = idsToExprsNode(GLOBDECL_DIMS(node));
-    }
+
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
@@ -358,7 +354,8 @@ node_st *STglobdef(node_st *node)
     node_st *dims = NULL;
     if (GLOBDEF_DIMS(node) != NULL)
     {
-        dims = exprsToExprsNode(GLOBDEF_DIMS(node));
+        // we need to make a new node because it symbol entry child
+        dims = GLOBDEF_DIMS(node);
     }
 
     if (!checkDecl(data, identifier))
@@ -423,6 +420,7 @@ node_st *STfuncall(node_st *node)
     if (entry != NULL)
     {
         FUNCALL_SYMBOLENTRY(node) = entry;
+
         FUNCALL_TYPE(node) = SYMBOLENTRY_TYPE(entry);
     }
     else

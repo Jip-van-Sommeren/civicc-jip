@@ -25,7 +25,9 @@ char *VarTypeToString(enum Type type)
         tmp = "void";
         break;
     case CT_NULL:
-        DBUG_ASSERT(false, "unknown type detected!");
+        tmp = "unkown";
+        break;
+        // DBUG_ASSERT(false, "unknown type detected!");
     }
     return tmp;
 }
@@ -117,29 +119,4 @@ int checkParamDimension(node_st *dims)
         dims = IDS_NEXT(dims);
     }
     return dimCount;
-}
-
-node_st *exprsToExprsNode(node_st *dims)
-{
-    node_st *exprs = NULL;
-    while (dims != NULL)
-    {
-        node_st *entry = ASTnum(NUM_VAL(EXPRS_EXPR(dims)));
-        exprs = ASTexprs(entry, exprs); // Recursively build the exprs node
-        dims = EXPRS_NEXT(dims);
-    }
-    return exprs;
-}
-
-node_st *idsToExprsNode(node_st *dims)
-{
-    node_st *exprs = NULL;
-    while (dims != NULL)
-    {
-        char *id = IDS_NAME(dims);
-        node_st *entry = ASTvar(NULL, strdup(id)); // Extract st entries
-        exprs = ASTexprs(entry, exprs);            // Recursively build the exprs node
-        dims = IDS_NEXT(dims);
-    }
-    return exprs;
 }

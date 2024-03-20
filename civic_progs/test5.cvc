@@ -1,0 +1,9 @@
+int twos = 0;
+int two ()
+{
+    return 2;
+}
+void foo ()
+{
+    int [2, two()] a = two ();
+}

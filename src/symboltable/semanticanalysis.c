@@ -37,35 +37,40 @@ bool getMonOpResultType(enum MonOpType op, enum Type operandType)
     return false; // If the operation is not defined for the given type
 }
 
-bool getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type rightType)
+enum Type getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type rightType)
 {
     // Check for type compatibility
     if (leftType != rightType)
     {
-        return false; // In this simple model, operands must be of the same type
+        return CT_NULL; // In this simple model, operands must be of the same type
     }
     if (leftType == CT_void)
     {
-        return false;
+        return CT_NULL;
     }
 
     switch (op)
     {
     case BO_add:
-    case BO_sub:
     case BO_mul:
+        if (leftType == CT_int || leftType == CT_float || leftType == CT_bool)
+        {
+            return leftType;
+        }
+        break;
+    case BO_sub:
     case BO_div:
         // These operations are valid for int and float types and return a result of the same type
         if (leftType == CT_int || leftType == CT_float)
         {
-            return true;
+            return leftType;
         }
         break;
     case BO_mod:
         // Modulo is only valid for integers
         if (leftType == CT_int)
         {
-            return true;
+            return leftType;
         }
         break;
     case BO_lt:
@@ -73,11 +78,16 @@ bool getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type rightTy
     case BO_gt:
     case BO_ge:
     case BO_eq:
-    case BO_ne:
-        // Relational operators are valid for int and float, but always return a boolean
         if (leftType == CT_int || leftType == CT_float)
         {
-            return true;
+            return CT_bool;
+        }
+        break;
+    case BO_ne:
+        // Relational operators are valid for int and float, but always return a boolean
+        if (leftType == CT_int || leftType == CT_float || leftType == CT_bool)
+        {
+            return CT_bool;
         }
         break;
     case BO_and:
@@ -85,13 +95,13 @@ bool getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type rightTy
         // Logical operators are only valid for booleans and return a boolean
         if (leftType == CT_bool)
         {
-            return true;
+            return leftType;
         }
         break;
     default:
         break;
     }
-    return false;
+    return CT_NULL;
 }
 
 enum Type getType(node_st *node)
@@ -213,6 +223,7 @@ void castTypeError()
 
 void binopTypeError(enum Type typeLeft, enum Type typeRight, enum BinOpType op)
 {
+    printf("here5\n");
     CTI(CTI_ERROR, true, "cannot perform %s on type %s and %s\n", BinopToString(op), VarTypeToString(typeLeft), VarTypeToString(typeRight));
     CTIabortOnError();
 }
@@ -255,6 +266,7 @@ void incorrectDimsArrayError()
 
 void assignTypeError(node_st *expr, node_st *varlet)
 {
+    printf("here3\n");
     CTI(CTI_ERROR, true, "arg %s is type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
     CTIabortOnError();
 }
@@ -397,14 +409,17 @@ node_st *SAmonop(node_st *node)
 node_st *SAbinop(node_st *node)
 
 {
+    printf("here 4\n");
     TRAVchildren(node);
     node_st *left = BINOP_LEFT(node);
     node_st *right = BINOP_RIGHT(node);
     enum Type typeLeft = getType(left);
     enum Type typeRight = getType(right);
-    if (getBinOpResultType(BINOP_OP(node), typeLeft, typeRight))
+
+    enum Type resultType = getBinOpResultType(BINOP_OP(node), typeLeft, typeRight);
+    if (resultType != CT_NULL)
     {
-        BINOP_TYPE(node) = typeLeft;
+        BINOP_TYPE(node) = resultType;
     }
     else
     {
@@ -427,10 +442,15 @@ node_st *SAcast(node_st *node)
 node_st *SAfuncall(node_st *node)
 {
     TRAVchildren(node);
+    printf("here\n");
     // Retrieve the list of expressions (arguments) passed in the function call
     node_st *exprs = FUNCALL_FUN_ARGS(node);
     // Retrieve the entry from the symbol table for the function being called
     node_st *entry = FUNCALL_SYMBOLENTRY(node);
+    if (entry == NULL)
+    {
+        printf("here5\n");
+    }
     // Retrieve the list of parameters defined for the function
     node_st *params = SYMBOLENTRY_PARAMS(entry);
 
@@ -478,19 +498,14 @@ node_st *SAfuncall(node_st *node)
 
 node_st *SAvardecl(node_st *node)
 {
-    TRAVchildren(node);
     node_st *init = VARDECL_INIT(node);
     node_st *dims = VARDECL_DIMS(node);
-    enum Type type = VARDECL_TYPE(node);
     if (dims == NULL && init != NULL && (VARDECL_TYPE(node) != getType(init)))
     {
         vardeclTypeError(init, node);
     }
 
-    if (dims != NULL && !checkArrayDimensions(dims, init, type))
-    {
-        incorrectDimsArrayError();
-    }
+    TRAVchildren(node);
 
     return node;
 }
@@ -512,15 +527,17 @@ node_st *SAreturn(node_st *node)
 
 node_st *SAassign(node_st *node)
 {
+    TRAVchildren(node);
     node_st *varlet = ASSIGN_LET(node);
 
     node_st *expr = ASSIGN_EXPR(node);
+
+    printf("node type :%d \n", NODE_TYPE(expr));
 
     if (getType(expr) != getType(varlet))
     {
         assignTypeError(expr, varlet);
     }
 
-    TRAVchildren(node);
     return node;
 }

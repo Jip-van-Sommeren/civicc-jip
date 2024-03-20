@@ -138,9 +138,9 @@ node_st *PRTreturn(node_st *node)
  */
 node_st *PRTfuncall(node_st *node)
 {
-    printf("Function Call: %s(", FUNCALL_NAME(node));
+    printf("%s(", FUNCALL_NAME(node));
     TRAVopt(FUNCALL_FUN_ARGS(node));
-    printf(");\n");
+    printf(")");
     return node;
 }
 
@@ -303,7 +303,6 @@ node_st *PRTvardecls(node_st *node)
     while (vardecls != NULL)
     {
         TRAVdo(VARDECLS_VARDECL(vardecls));
-        printf(", ");
         // Move to the next set of declessions
         vardecls = VARDECLS_NEXT(vardecls);
     }
@@ -412,9 +411,14 @@ node_st *PRTparams(node_st *node)
 node_st *PRTvardecl(node_st *node)
 {
     printf("%s", VarTypeToString(VARDECL_TYPE(node)));
-    printf(" %s", VARDECL_NAME(node));
     // Assuming dims and init are optional children
-    TRAVopt(VARDECL_DIMS(node));
+    if (VARDECL_DIMS(node) != NULL)
+    {
+        printf("[");
+        TRAVopt(VARDECL_DIMS(node));
+        printf("]");
+    }
+    printf(" %s", VARDECL_NAME(node));
     if (VARDECL_INIT(node) != NULL)
     {
         printf(" = ");
@@ -530,5 +534,18 @@ node_st *PRTbool(node_st *node)
 {
     char *bool_str = BOOL_VAL(node) ? "true" : "false";
     printf("%s", bool_str);
+    return node;
+}
+
+node_st *PRTtern(node_st *node)
+{
+    printf("here\n");
+
+    TRAVopt(TERN_COND(node));
+    printf("? ");
+    TRAVopt(TERN_THEN_EXPR(node));
+    printf(": ");
+    TRAVopt(TERN_ELSE_EXPR(node));
+    printf("\n");
     return node;
 }
