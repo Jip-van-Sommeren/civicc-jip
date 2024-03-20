@@ -9,6 +9,7 @@
 #include "string.h"
 #include "palm/dbug.h"
 #include "palm/ctinfo.h"
+#include "vartypetostring.h"
 
 #define TABLE_SIZE 128
 #define STACK_SIZE 3
@@ -47,9 +48,8 @@ bool checkDecl(struct data_st *data, char *name)
 /**
  * @fn insertSymbol
  */
-void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *params)
+void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, node_st *params)
 {
-    printf("Inserting '%s' of type %d, into the symbol table.\n", name, type);
     if (!data || data->scopeStack->top < 0)
     {
         fprintf(stderr, "No current scope available for symbol insertion.\n");
@@ -57,8 +57,7 @@ void insertSymbol(struct data_st *data, char *name, enum Type type, int declared
     }
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     htable_st *currentSymbolTable = currentScope->symbolTable;
-    printf("Inserting '%s' into the symbol table.\n", name);
-    node_st *newentry = ASTsymbolentry(strdup(name), type, declaredAtLine, currentScope->level, nodetype, params);
+    node_st *newentry = ASTsymbolentry(dims, params, strdup(name), type, declaredAtLine, currentScope->level, nodetype);
 
     if (!HTinsert(currentSymbolTable, name, newentry))
     {
@@ -228,11 +227,17 @@ node_st *STvardecl(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
 
+    node_st *dims = NULL;
+    if (VARDECL_DIMS(node) != NULL)
+    {
+        dims = exprsToExprsNode(VARDECL_DIMS(node));
+    }
+
     // Check if the variable is already declared
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, NULL);
     }
     TRAVchildren(node);
     return node;
@@ -272,7 +277,7 @@ node_st *STfundef(node_st *node)
     else if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, params);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL, params);
     }
     // sert the function symbol into the symbol table with the current scope level
     //  Increment the scope level for the function body
@@ -299,8 +304,14 @@ node_st *STparam(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
 
+    node_st *dims = NULL;
+    if (PARAM_DIMS(node) != NULL)
+    {
+        dims = idsToExprsNode(PARAM_DIMS(node));
+    }
+
     // Only insert the symbol if it was not already declared
-    insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL);
+    insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, NULL);
     return node;
 }
 /**
@@ -317,10 +328,15 @@ node_st *STglobdecl(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
 
+    node_st *dims = NULL;
+    if (GLOBDECL_DIMS(node) != NULL)
+    {
+        dims = idsToExprsNode(GLOBDECL_DIMS(node));
+    }
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, GLOBDECL_PARAMS(node));
     }
     TRAVchildren(node);
     return node;
@@ -339,11 +355,16 @@ node_st *STglobdef(node_st *node)
     // char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
+    node_st *dims = NULL;
+    if (GLOBDEF_DIMS(node) != NULL)
+    {
+        dims = exprsToExprsNode(GLOBDEF_DIMS(node));
+    }
 
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, NULL);
     }
     TRAVchildren(node);
     return node;
@@ -356,11 +377,9 @@ node_st *STvar(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VAR_NAME(node);
-    printf("var name :%s\n", name);
     node_st *entry = findLink(data, name);
     if (entry != NULL)
     {
-        printf(" heree\n");
         VAR_SYMBOLENTRY(node) = entry;
         VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
     }
@@ -409,7 +428,7 @@ node_st *STfuncall(node_st *node)
     else
     {
         // Make symbolentry node, set all properties to -1, will be updated when corresponding fundef is found.
-        node_st *entry = ASTsymbolentry(strdup(name), -1, -1, -1, -1, NULL);
+        node_st *entry = ASTsymbolentry(NULL, NULL, strdup(name), -1, -1, -1, -1);
         FUNCALL_SYMBOLENTRY(node) = entry;
         HTinsert(data->unresolvedFuncall, name, entry);
     }

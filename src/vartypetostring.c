@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include "palm/dbug.h"
 #include <stdbool.h>
+#include <string.h>
 #include "ccngen/enum.h"
+#include "ccngen/ast.h"
 /**
  * @fn VarTypeToString
  */
@@ -93,4 +95,51 @@ char *MonopToString(enum MonOpType type)
         DBUG_ASSERT(false, "unknown monop detected!");
     }
     return tmp;
+}
+
+int checkExprDimension(node_st *dims)
+{
+    int dimCount = 0;
+    while (dims != NULL)
+    {
+        dimCount++;
+        dims = EXPRS_NEXT(dims);
+    }
+    return dimCount;
+}
+
+int checkParamDimension(node_st *dims)
+{
+    int dimCount = 0;
+    while (dims != NULL)
+    {
+        dimCount++;
+        dims = IDS_NEXT(dims);
+    }
+    return dimCount;
+}
+
+node_st *exprsToExprsNode(node_st *dims)
+{
+    node_st *exprs = NULL;
+    while (dims != NULL)
+    {
+        node_st *entry = ASTnum(NUM_VAL(EXPRS_EXPR(dims)));
+        exprs = ASTexprs(entry, exprs); // Recursively build the exprs node
+        dims = EXPRS_NEXT(dims);
+    }
+    return exprs;
+}
+
+node_st *idsToExprsNode(node_st *dims)
+{
+    node_st *exprs = NULL;
+    while (dims != NULL)
+    {
+        char *id = IDS_NAME(dims);
+        node_st *entry = ASTvar(NULL, strdup(id)); // Extract st entries
+        exprs = ASTexprs(entry, exprs);            // Recursively build the exprs node
+        dims = IDS_NEXT(dims);
+    }
+    return exprs;
 }
