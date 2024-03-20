@@ -8,13 +8,20 @@ int func(int b, int d, float f)
         int z = 6;
         return;
     }
+
+    void bak(int [m, n] a){
+        
+    }
     void bar(float n, int m, int [o, p] array){
         int x = 5 + m;
         float h = 0.1 + n;
         foo();
+        bak(array);
         return;
     }
-    bar(f, b, 3);
+    bak(mat);
+    
+    bar(f, b, mat);
     return g + 4 + d;
 }
 

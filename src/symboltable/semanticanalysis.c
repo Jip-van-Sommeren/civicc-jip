@@ -253,43 +253,41 @@ void incorrectDimsArrayError()
     CTIabortOnError();
 }
 
-int countArrayDimensions(node_st *arrExpr)
+void assignTypeError(node_st *expr, node_st *varlet)
 {
-    if (NODE_TYPE(arrExpr) != NT_ARREXPR)
-    {
-        // Not an ArrExpr, return 0 as this node does not contribute to dimensions.
-        return 0;
-    }
-
-    // Get the first list of expressions within the ArrExpr node.
-    node_st *exprList = ARREXPR_EXPRS(arrExpr);
-    if (exprList == NULL)
-    {
-        // Empty list, so this is a 1-dimensional array with 0 elements.
-        return 1;
-    }
-
-    node_st *firstExpr = EXPRS_EXPR(exprList);
-    if (firstExpr == NULL || NODE_TYPE(firstExpr) != NT_ARREXPR)
-    {
-        // The list contains non-ArrExpr elements, indicating this is a 1D array.
-        return 1;
-    }
-
-    // The first element of the list is an ArrExpr, indicating that this is at least a 2D array.
-    // Recursively count the dimensions of the first ArrExpr in the list to handle nested arrays.
-    return 1 + countArrayDimensions(firstExpr);
+    CTI(CTI_ERROR, true, "arg %s is type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
+    CTIabortOnError();
 }
 
-int checkParamDimension(node_st *dims)
+int countArrayDimensions(node_st *arrExpr)
 {
-    int dimCount = 0;
-    while (dims != NULL)
+
+    if (NODE_TYPE(arrExpr) == NT_ARREXPR)
     {
-        dimCount++;
-        dims = IDS_NEXT(dims);
+        // Get the first list of expressions within the ArrExpr node.
+        node_st *exprList = ARREXPR_EXPRS(arrExpr);
+        if (exprList == NULL)
+        {
+            // Empty list, so this is a 1-dimensional array with 0 elements.
+            return 1;
+        }
+
+        node_st *firstExpr = EXPRS_EXPR(exprList);
+        if (firstExpr == NULL || NODE_TYPE(firstExpr) != NT_ARREXPR)
+        {
+            // The list contains non-ArrExpr elements, indicating this is a 1D array.
+            return 1;
+        }
+
+        // The first element of the list is an ArrExpr, indicating that this is at least a 2D array.
+        // Recursively count the dimensions of the first ArrExpr in the list to handle nested arrays.
+        return 1 + countArrayDimensions(firstExpr);
     }
-    return dimCount;
+    else if (NODE_TYPE(arrExpr) == NT_VAR)
+    {
+        return checkExprDimension(SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(arrExpr)));
+    }
+    return 0;
 }
 
 bool isExprList(node_st *node)
@@ -514,6 +512,15 @@ node_st *SAreturn(node_st *node)
 
 node_st *SAassign(node_st *node)
 {
+    node_st *varlet = ASSIGN_LET(node);
+
+    node_st *expr = ASSIGN_EXPR(node);
+
+    if (getType(expr) != getType(varlet))
+    {
+        assignTypeError(expr, varlet);
+    }
+
     TRAVchildren(node);
     return node;
 }

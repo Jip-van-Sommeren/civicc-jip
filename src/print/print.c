@@ -62,8 +62,8 @@ node_st *PRTexprs(node_st *node)
 
     while (exprs != NULL)
     {
-        TRAVdo(EXPRS_EXPR(exprs));
         printf(", ");
+        TRAVdo(EXPRS_EXPR(exprs));
         // Move to the next set of expressions
         exprs = EXPRS_NEXT(exprs);
     }
@@ -89,7 +89,7 @@ node_st *PRTarrexpr(node_st *node)
 node_st *PRTids(node_st *node)
 {
     // Print the name of the identifier
-    printf("id name: %s", IDS_NAME(node));
+    printf("%s", IDS_NAME(node));
 
     // If there is another expression in the list, print a comma and continue printing
 
@@ -97,8 +97,8 @@ node_st *PRTids(node_st *node)
 
     while (ids != NULL)
     {
-        printf("id name: %s", IDS_NAME(ids));
         printf(", ");
+        printf("%s", IDS_NAME(ids));
         // Move to the next set of idsessions
         ids = IDS_NEXT(ids);
     }

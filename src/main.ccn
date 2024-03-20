@@ -8,6 +8,8 @@ start phase RootPhase {
     actions {
         pass SPdoScanParse;
         SemanticAnalysis;
+        ArrayParameter;
+        Print;
     }
 };
 
@@ -31,6 +33,11 @@ phase SemanticAnalysis {
 
         };
 }
+};
+
+traversal ArrayParameter {
+    uid = AP,
+    nodes = {FunDef, FunCall}
 };
 
 /*****************************************************************************
@@ -330,13 +337,16 @@ node SymbolTable {
 };
 
 node SymbolEntry {
+    children {
+        Exprs dims {constructor}
+    },
     attributes {
+        Params params {constructor},
         string name { constructor },
         Type type { constructor },
         int declaredAtLine { constructor },
         int scopeLevel { constructor },
-        int nodetype { constructor },
-        Params params {constructor}
+        int nodetype { constructor }
     }
 };
 
@@ -379,7 +389,8 @@ node VarLet {
 
 node Var {
     children {
-        Exprs indices {constructor}
+        Exprs indices {constructor},
+        Exprs dimensions
     },
     attributes {
         string name { constructor }
