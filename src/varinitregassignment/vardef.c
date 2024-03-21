@@ -24,8 +24,7 @@ void VDRAfini()
 
 node_st *VDRAprogram(node_st *node)
 {
-    // Step 1: Create a list to store assignment statements for global variable initializations
-    node_st *assignStmts = NULL; // Placeholder for the first assignment in the list
+    node_st *assignStmts = NULL;
 
     node_st *decls = PROGRAM_DECLS(node);
     node_st *lastDecls = NULL;
@@ -37,7 +36,7 @@ node_st *VDRAprogram(node_st *node)
             node_st *globDef = DECLS_DECL(decls);
 
             // Create an assignment statement for the global variable initialization
-            node_st *var = ASTvarlet(NULL, strdup(GLOBDEF_NAME(globDef))); // Assuming this creates a variable node
+            node_st *var = ASTvarlet(NULL, strdup(GLOBDEF_NAME(globDef)));
             node_st *assign = ASTassign(var, makeExpr(GLOBDEF_INIT(globDef)));
 
             // Add the assignment to the list
@@ -55,13 +54,9 @@ node_st *VDRAprogram(node_st *node)
         decls = DECLS_NEXT(decls);
     }
 
-    // // Step 5: Create the __init function definition node with the assignments as its body
-    node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);                           // Assuming this creates a list of statements
-    node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, false); // Assuming this creates a function definition node
-    // Add the __init function definition to the program
+    node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);
+    node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, false);
     DECLS_NEXT(lastDecls) = ASTdecls(initFunDef, NULL);
-    // You might need to prepend this to the declarations or handle it specifically during code generation
-    // This part of the implementation depends on how your AST and program structure are defined
 
     return node; // Return the modified AST
 }
@@ -71,12 +66,14 @@ node_st *VDRAfunbody(node_st *node)
     node_st *varDeclsNode = FUNBODY_VARDECLS(node);
 
     node_st *prevVardeclsNode = NULL;
+    int i = 1;
     while (varDeclsNode != NULL)
     {
         node_st *vardecl = VARDECLS_VARDECL(varDeclsNode);
+        int dimsCount = 0;
         if (VARDECL_DIMS(vardecl) != NULL)
         {
-            int i = 1;
+            dimsCount += checkExprDimension(VARDECL_DIMS(vardecl));
             char str[20];
             node_st *exprs = VARDECL_DIMS(vardecl);
 
@@ -129,6 +126,8 @@ node_st *VDRAfunbody(node_st *node)
             }
             prevVardeclsNode = newVardeclsNode;
         }
+        // Keep names free for for loops in next traversal
+        i += dimsCount;
 
         varDeclsNode = VARDECLS_NEXT(varDeclsNode);
     }

@@ -498,15 +498,14 @@ node_st *SAfuncall(node_st *node)
 
 node_st *SAvardecl(node_st *node)
 {
+    TRAVchildren(node);
     node_st *init = VARDECL_INIT(node);
     node_st *dims = VARDECL_DIMS(node);
     if (dims == NULL && init != NULL && (VARDECL_TYPE(node) != getType(init)))
     {
         vardeclTypeError(init, node);
     }
-
-    TRAVchildren(node);
-
+    printf("%d \n", NODE_TYPE(VARDECL_INIT(node)));
     return node;
 }
 

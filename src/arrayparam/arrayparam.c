@@ -27,6 +27,11 @@ node_st *APfundef(node_st *node)
     node_st *currentParamsNode = FUNDEF_PARAMS(node);
     node_st *prevParamsNode = NULL; // Keep track of the previous Params node in the linked list
 
+    // pseudo fundef __init can be skipped
+    if (strcmp(FUNDEF_NAME(node), "__init") == 0)
+    {
+        return node;
+    }
     while (currentParamsNode != NULL)
     {
         node_st *param = PARAMS_PARAM(currentParamsNode);
@@ -84,6 +89,11 @@ node_st *APfuncall(node_st *node)
     node_st *exprsNode = FUNCALL_FUN_ARGS(node);
     node_st *prevExprsNode = NULL; // Keep track of the previous Params node in the linked list
 
+    // edge case for pseudo allocate since it is not a real funcall
+    if (strcmp(FUNCALL_NAME(node), "__allocate") == 0)
+    {
+        return node;
+    }
     while (exprsNode != NULL)
     {
         node_st *expr = EXPRS_EXPR(exprsNode);

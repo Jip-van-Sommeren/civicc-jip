@@ -40,7 +40,7 @@ node_st *PRTdecls(node_st *node)
     while (decls != NULL)
     {
         TRAVdo(DECLS_DECL(decls));
-        printf(", ");
+        // printf(", ");
         // Move to the next set of declessions
         decls = DECLS_NEXT(decls);
     }
@@ -150,9 +150,9 @@ node_st *PRTfuncall(node_st *node)
 node_st *PRTcast(node_st *node)
 {
 
-    printf("Cast to %s: (", VarTypeToString(CAST_TYPE(node)));
+    printf("(%s) ", VarTypeToString(CAST_TYPE(node)));
     TRAVdo(CAST_EXPR(node));
-    printf(")\n");
+    printf(";\n");
     return node;
 }
 
@@ -163,14 +163,15 @@ node_st *PRTfundef(node_st *node)
 {
     // Directly integrate the type conversion logic
 
-    printf("Function Definition: %s\n", FUNDEF_NAME(node));
-    printf("Return Type: %s\n", VarTypeToString(FUNDEF_TYPE(node)));
-    TRAVopt(FUNDEF_BODY(node));
+    printf("%s %s ( ", VarTypeToString(FUNDEF_TYPE(node)), FUNDEF_NAME(node));
     TRAVopt(FUNDEF_PARAMS(node));
-    printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
-    printf("-------------------------------------------------------------\n");
-    TRAVopt(FUNDEF_SYMBOLTABLE(node));
-    printf("-------------------------------------------------------------\n");
+    printf(")\n{\n");
+    TRAVopt(FUNDEF_BODY(node));
+    printf("}\n");
+    // printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
+    // printf("-------------------------------------------------------------\n");
+    // TRAVopt(FUNDEF_SYMBOLTABLE(node));
+    // printf("-------------------------------------------------------------\n");
     return node;
 }
 
@@ -179,7 +180,6 @@ node_st *PRTfundef(node_st *node)
  */
 node_st *PRTfunbody(node_st *node)
 {
-    printf("Function block:\n");
     TRAVopt(FUNBODY_VARDECLS(node));
 
     TRAVopt(FUNBODY_LOCAL_FUNDEFS(node));
@@ -238,19 +238,19 @@ node_st *PRTdowhile(node_st *node)
  */
 node_st *PRTfor(node_st *node)
 {
-    printf("for (");
+    printf("for (%s = ", FOR_VAR(node));
     // Print the start expression of the for loop
     TRAVdo(FOR_START_EXPR(node));
-    printf("; ");
+    printf(", ");
     // Print the stop condition of the for loop
     TRAVdo(FOR_STOP(node));
-    printf("; ");
     // Print the step expression if it exists
     if (FOR_STEP(node) != NULL)
     {
+        printf(", ");
         TRAVdo(FOR_STEP(node));
     }
-    printf(") {\n");
+    printf(") {\n   ");
     // Print the block of statements
     TRAVopt(FOR_BLOCK(node));
     printf("}\n");
@@ -263,11 +263,22 @@ node_st *PRTfor(node_st *node)
 node_st *PRTglobdecl(node_st *node)
 {
 
-    printf("%s %s;\n", VarTypeToString(GLOBDECL_TYPE(node)), GLOBDECL_NAME(node));
+    printf("EXTERN %s ", VarTypeToString(GLOBDECL_TYPE(node)));
     // Assuming dims is an optional child
-    TRAVopt(GLOBDECL_DIMS(node));
-    TRAVopt(GLOBDECL_PARAMS(node));
-    printf("\n");
+    if (GLOBDECL_DIMS(node) != NULL)
+    {
+        printf("[");
+        TRAVopt(GLOBDECL_DIMS(node));
+        printf("]");
+    }
+    printf("%s", GLOBDECL_NAME(node));
+    if (GLOBDECL_PARAMS(node) != NULL)
+    {
+        printf("(");
+        TRAVopt(GLOBDECL_PARAMS(node));
+        printf(")");
+    }
+    printf(";\n");
     return node;
 }
 
@@ -276,9 +287,14 @@ node_st *PRTglobdecl(node_st *node)
  */
 node_st *PRTglobdef(node_st *node)
 {
-    printf("Global Definition: %s\n", GLOBDEF_NAME(node));
+    printf("%s %s", VarTypeToString(GLOBDEF_TYPE(node)), GLOBDEF_NAME(node));
     // Assuming dims and init are optional children
-    TRAVopt(GLOBDEF_DIMS(node));
+    if (GLOBDEF_DIMS(node) != NULL)
+    {
+        printf("[");
+        TRAVopt(GLOBDEF_DIMS(node));
+        printf("] ");
+    }
     if (GLOBDEF_INIT(node) != NULL)
     {
         printf(" = ");
@@ -338,8 +354,8 @@ node_st *PRTsymboltable(node_st *node)
 node_st *PRTsymbolentry(node_st *node)
 {
     // Print the current function definition
-    char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
-    printf("%-20s %-15s %-10d %-10d\n", SYMBOLENTRY_NAME(node), typestr, SYMBOLENTRY_SCOPELEVEL(node), SYMBOLENTRY_DECLAREDATLINE(node));
+    // char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
+    // printf("%-20s %-15s %-10d %-10d\n", SYMBOLENTRY_NAME(node), typestr, SYMBOLENTRY_SCOPELEVEL(node), SYMBOLENTRY_DECLAREDATLINE(node));
     return node;
 }
 /**
@@ -369,17 +385,17 @@ node_st *PRTfundefs(node_st *node)
 node_st *PRTparam(node_st *node)
 {
 
-    printf("Parameter: %s, Type: %s", PARAM_NAME(node), VarTypeToString(PARAM_TYPE(node)));
+    printf("%s ", VarTypeToString(PARAM_TYPE(node)));
 
     // If the parameter has dimensions (for array types), print them.
     if (PARAM_DIMS(node) != NULL)
     {
         printf("[");
         TRAVopt(PARAM_DIMS(node)); // Assuming this would print the dimensions or size of the array.
-        printf("]");
+        printf("] ");
     }
+    printf("%s", PARAM_NAME(node));
 
-    printf("\n");
     return node;
 }
 
@@ -397,6 +413,7 @@ node_st *PRTparams(node_st *node)
 
     while (params != NULL)
     {
+        printf(", ");
         TRAVdo(PARAMS_PARAM(params));
         // Move to the next set of declessions
         params = PARAMS_NEXT(params);
@@ -454,7 +471,8 @@ node_st *PRTstmts(node_st *node)
  */
 node_st *PRTassign(node_st *node)
 {
-    printf("Assignment to %s = ", VARLET_NAME(ASSIGN_LET(node))); // Assuming VARLET_NAME gets the name of the variable
+    TRAVdo(ASSIGN_LET(node));
+    printf(" = ");
     TRAVdo(ASSIGN_EXPR(node));
     printf(";\n");
     return node;
@@ -474,7 +492,7 @@ node_st *PRTbinop(node_st *node)
 
     TRAVright(node);
 
-    printf(")(%d:%d-%d)", NODE_BLINE(node), NODE_BCOL(node), NODE_ECOL(node));
+    printf(")");
 
     return node;
 }
@@ -496,7 +514,13 @@ node_st *PRTmonop(node_st *node)
  */
 node_st *PRTvarlet(node_st *node)
 {
-    printf("%s(%d:%d)", VARLET_NAME(node), NODE_BLINE(node), NODE_BCOL(node));
+    if (VARLET_INDICES(node) != NULL)
+    {
+        printf("[");
+        TRAVdo(VARLET_INDICES(node));
+        printf("] ");
+    }
+    printf("%s", VARLET_NAME(node));
     return node;
 }
 

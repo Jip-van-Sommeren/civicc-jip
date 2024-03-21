@@ -1,9 +1,11 @@
 int twos = 0;
 int two ()
 {
+    int c = 3 + 4;
     return 2;
 }
 void foo ()
 {
-    int [2, two()] a = two ();
+    int [2, two()] a = two();
+    int [3, two()] b = 4;
 }

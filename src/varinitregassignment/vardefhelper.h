@@ -2,3 +2,4 @@
 node_st *makeExpr(node_st *expr);
 node_st *makeVarNode(node_st *expr, char *name);
 void freeInitExpr(node_st *expr);
+node_st *exprsToExprs(node_st *dims);

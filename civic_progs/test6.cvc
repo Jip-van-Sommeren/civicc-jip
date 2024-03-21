@@ -1,0 +1,7 @@
+void foo ()
+{
+    int x = 4;
+    int y = 6;
+    int z = 8;
+    z = 4;
+}

@@ -8,7 +8,7 @@ start phase RootPhase {
     actions {
         pass SPdoScanParse;
         SemanticAnalysis;
-        VarDefRegAss;
+        VarDefRegularAssignments;
         ArrayParameter;
         BoolDisConjunction;
         Print;
