@@ -238,32 +238,9 @@ node_st *VDRATfunbody(node_st *node)
                 node_st *newVardeclsNode = ASTvardecls(newVarDecl, NULL);
                 // make vars for varlet indeces and recursively insert
                 node_st *var = ASTvar(NULL, strdup(str));
-                // dims = ASTexprs(var, dims);
-                if (dims == NULL)
-                {
-                    dims = ASTexprs(var, NULL);
-                    dimsTail = dims;
-                }
-                else
-                {
-                    // Append to the list and update the tail.
-                    node_st *newExprNode = ASTexprs(var, NULL);
-                    EXPRS_NEXT(dimsTail) = newExprNode;
-                    dimsTail = newExprNode;
-                }
 
-                if (fun_args == NULL)
-                {
-                    fun_args = ASTexprs(makeExpr(EXPRS_EXPR(exprs)), NULL);
-                    fun_argsTail = fun_args;
-                }
-                else
-                {
-                    // Append to the list and update the tail.
-                    node_st *newExprNode = ASTexprs(makeExpr(EXPRS_EXPR(exprs)), NULL);
-                    EXPRS_NEXT(fun_argsTail) = newExprNode;
-                    fun_argsTail = newExprNode;
-                }
+                appendExprAndUpdateTail(&fun_args, &fun_argsTail, makeExpr(EXPRS_EXPR(exprs)));
+                appendExprAndUpdateTail(&dims, &dimsTail, var);
                 // super ugly solution but works for now,
                 // #todo maybe fix?
                 if (dimsCount == 1)
