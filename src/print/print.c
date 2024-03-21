@@ -168,10 +168,10 @@ node_st *PRTfundef(node_st *node)
     printf(")\n{\n");
     TRAVopt(FUNDEF_BODY(node));
     printf("}\n");
-    // printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
-    // printf("-------------------------------------------------------------\n");
-    // TRAVopt(FUNDEF_SYMBOLTABLE(node));
-    // printf("-------------------------------------------------------------\n");
+    printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
+    printf("-------------------------------------------------------------\n");
+    TRAVopt(FUNDEF_SYMBOLTABLE(node));
+    printf("-------------------------------------------------------------\n");
     return node;
 }
 
@@ -354,8 +354,8 @@ node_st *PRTsymboltable(node_st *node)
 node_st *PRTsymbolentry(node_st *node)
 {
     // Print the current function definition
-    // char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
-    // printf("%-20s %-15s %-10d %-10d\n", SYMBOLENTRY_NAME(node), typestr, SYMBOLENTRY_SCOPELEVEL(node), SYMBOLENTRY_DECLAREDATLINE(node));
+    char *typestr = VarTypeToString(SYMBOLENTRY_TYPE(node));
+    printf("%-20s %-15s %-10d %-10d\n", SYMBOLENTRY_NAME(node), typestr, SYMBOLENTRY_SCOPELEVEL(node), SYMBOLENTRY_DECLAREDATLINE(node));
     return node;
 }
 /**
@@ -563,7 +563,6 @@ node_st *PRTbool(node_st *node)
 
 node_st *PRTtern(node_st *node)
 {
-    printf("here\n");
 
     TRAVopt(TERN_COND(node));
     printf("? ");

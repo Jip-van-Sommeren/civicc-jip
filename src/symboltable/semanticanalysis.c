@@ -223,7 +223,6 @@ void castTypeError()
 
 void binopTypeError(enum Type typeLeft, enum Type typeRight, enum BinOpType op)
 {
-    printf("here5\n");
     CTI(CTI_ERROR, true, "cannot perform %s on type %s and %s\n", BinopToString(op), VarTypeToString(typeLeft), VarTypeToString(typeRight));
     CTIabortOnError();
 }
@@ -266,7 +265,6 @@ void incorrectDimsArrayError()
 
 void assignTypeError(node_st *expr, node_st *varlet)
 {
-    printf("here3\n");
     CTI(CTI_ERROR, true, "arg %s is type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
     CTIabortOnError();
 }
@@ -409,7 +407,6 @@ node_st *SAmonop(node_st *node)
 node_st *SAbinop(node_st *node)
 
 {
-    printf("here 4\n");
     TRAVchildren(node);
     node_st *left = BINOP_LEFT(node);
     node_st *right = BINOP_RIGHT(node);
@@ -442,15 +439,11 @@ node_st *SAcast(node_st *node)
 node_st *SAfuncall(node_st *node)
 {
     TRAVchildren(node);
-    printf("here\n");
     // Retrieve the list of expressions (arguments) passed in the function call
     node_st *exprs = FUNCALL_FUN_ARGS(node);
     // Retrieve the entry from the symbol table for the function being called
     node_st *entry = FUNCALL_SYMBOLENTRY(node);
-    if (entry == NULL)
-    {
-        printf("here5\n");
-    }
+
     // Retrieve the list of parameters defined for the function
     node_st *params = SYMBOLENTRY_PARAMS(entry);
 
@@ -505,7 +498,6 @@ node_st *SAvardecl(node_st *node)
     {
         vardeclTypeError(init, node);
     }
-    printf("%d \n", NODE_TYPE(VARDECL_INIT(node)));
     return node;
 }
 

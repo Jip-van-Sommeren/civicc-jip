@@ -4,7 +4,7 @@ void f()
   float b = 39.0 + 3.0 + 21.0;
   bool c = false + false;
 
-  int d = 2 - 3 - 4 - 5;
+  int d = 2 - 3 - 4 - a;
   float e = 39.0 - 3.0 - 21.0;
 
   int f = 2 * 3 * 1;
@@ -27,10 +27,12 @@ void f()
   bool r = 60 < 50 || 30 > 10;
   bool s = 3.0 > 2.0;
 
+
   bool t = 8 != 8;
   bool u = 8 == 8;
   bool v = 1.2 != 2.1;
   bool w = true != false;
+  int test(){}
   f();
 
 }

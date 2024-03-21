@@ -50,7 +50,6 @@ bool checkDecl(struct data_st *data, char *name)
  */
 void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, node_st *params)
 {
-    printf("inserting %s into table! \n", name);
     if (!data || data->scopeStack->top < 0)
     {
         fprintf(stderr, "No current scope available for symbol insertion.\n");
@@ -109,10 +108,24 @@ node_st *ST_popScopeLevel(struct data_st *data)
 {
     htable_iter_st *iter = HTiterate(data->scopeStack->scopes[data->scopeStack->top].symbolTable);
     node_st *symboltable = NULL;
+    node_st *symboltableTail = NULL;
     while (iter != NULL)
     {
-        node_st *entry = HTiterValue(iter);               // Extract st entries
-        symboltable = ASTsymboltable(entry, symboltable); // Recursively build the symboltable node
+        node_st *entry = HTiterValue(iter); // Extract st entries
+
+        if (symboltable == NULL)
+        {
+            // This is the first assignment statement.
+            symboltable = ASTsymboltable(entry, NULL);
+            symboltableTail = symboltable; // The tail is the same as head now.
+        }
+        else
+        {
+            // Append to the tail and update the tail pointer.
+            node_st *newSymboltable = ASTsymboltable(entry, NULL);
+            SYMBOLTABLE_NEXT(symboltableTail) = newSymboltable; // Append to the end.
+            symboltableTail = newSymboltable;                   // Update the tail.
+        }
         iter = HTiterateNext(iter);
     }
     HTdelete(data->scopeStack->scopes[data->scopeStack->top].symbolTable); // Cleanup the symbol table of the current scope
@@ -286,8 +299,9 @@ node_st *STfundef(node_st *node)
     //  Increment the scope level for the function body
     ST_pushScopeLevel(data, type);
 
-    TRAVparams(node);
-    TRAVdo(FUNDEF_BODY(node));
+    // TRAVparams(node);
+    // TRAVdo(FUNDEF_BODY(node));
+    TRAVchildren(node);
 
     // Once done processing the function body, decrement the scope level to exit the function's scope
     node_st *symboltable = ST_popScopeLevel(data);

@@ -89,8 +89,8 @@ exprs: exprs_nonempty
 
 exprs_nonempty: expr
               { $$ = ASTexprs($1, NULL);}
-              | exprs COMMA expr
-              { $$ = ASTexprs($3, $1);}
+              | expr COMMA exprs
+              { $$ = ASTexprs($1, $3);}
               ;
 
 arrexpr: SQUARE_BRACKET_L exprs SQUARE_BRACKET_R
@@ -105,8 +105,8 @@ ids: ids_nonempty
 
 ids_nonempty: ID
             { $$ = ASTids(NULL, $1);}
-            | ids COMMA ID
-            { $$ = ASTids($1, $3);}
+            | ID COMMA ids
+            { $$ = ASTids($3, $1);}
             ;
 
 funcall: ID BRACKET_L exprs BRACKET_R
@@ -165,9 +165,11 @@ globdecl: EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON
 
 stmts: %empty
      { $$ = NULL;}
-     | stmts stmt
-     { $$ = ASTstmts($2, $1);}
+     | stmt stmts
+     { $$ = ASTstmts($1, $2);}
      ;
+
+
 
 param: ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID
      { $$ = ASTparam($3, $5, $1); AddLocToNode($$, &@1, &@$);}
@@ -183,8 +185,8 @@ params: params_nonempty
 
 params_nonempty: param
                { $$ = ASTparams($1, NULL);}
-               | params COMMA param
-               { $$ = ASTparams($3, $1);}
+               | param COMMA params
+               { $$ = ASTparams($1, $3);}
                ;
 
 stmt: assign
@@ -247,10 +249,21 @@ assign: varlet LET expr SEMICOLON
       { $$ = ASTassign($1, $3); AddLocToNode($$, &@1, &@$);}
       ;
 
-vardecls: %empty
+vardecls: vardecls vardecl
+       {
+            // Append $2 to the end of $1 list
+            if ($1 == NULL) {
+                $$ = ASTvardecls($2, NULL);
+            } else {
+                node_st* last = $1;
+                while (VARDECLS_NEXT(last) != NULL) {
+                    last = VARDECLS_NEXT(last);
+                }
+                VARDECLS_NEXT(last) = ASTvardecls($2, NULL);
+                $$ = $1;
+            }}
+        | %empty
         { $$ = NULL;}
-        | vardecls vardecl
-        { $$ = ASTvardecls($2, $1);}
         ;
 
 vardecl: ctype ID var_decl_tail

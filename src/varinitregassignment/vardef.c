@@ -24,24 +24,37 @@ void VDRAfini()
 
 node_st *VDRAprogram(node_st *node)
 {
-    node_st *assignStmts = NULL;
+    node_st *assignStmts = NULL; // Placeholder for the first assignment in the list
+    node_st *lastDecls = NULL;
+
+    node_st *assignStmtsTail = NULL; // Tail of the list.
 
     node_st *decls = PROGRAM_DECLS(node);
-    node_st *lastDecls = NULL;
     while (decls != NULL)
     {
         if (NODE_TYPE(DECLS_DECL(decls)) == NT_GLOBDEF)
         {
-            // Extract the global definition node
+            // Extract the global definition node.
             node_st *globDef = DECLS_DECL(decls);
 
-            // Create an assignment statement for the global variable initialization
+            // Create an assignment statement for the global variable initialization.
             node_st *var = ASTvarlet(NULL, strdup(GLOBDEF_NAME(globDef)));
             node_st *assign = ASTassign(var, makeExpr(GLOBDEF_INIT(globDef)));
 
-            // Add the assignment to the list
-
-            assignStmts = ASTstmts(assign, assignStmts); // This is the first assignment
+            // Append the assignment to the list.
+            if (assignStmts == NULL)
+            {
+                // This is the first assignment statement.
+                assignStmts = ASTstmts(assign, NULL);
+                assignStmtsTail = assignStmts; // The tail is the same as head now.
+            }
+            else
+            {
+                // Append to the tail and update the tail pointer.
+                node_st *newStmtsNode = ASTstmts(assign, NULL);
+                STMTS_NEXT(assignStmtsTail) = newStmtsNode; // Append to the end.
+                assignStmtsTail = newStmtsNode;             // Update the tail.
+            }
 
             freeInitExpr(GLOBDEF_INIT(DECLS_DECL(decls)));
             GLOBDEF_INIT(DECLS_DECL(decls)) = NULL;
@@ -54,8 +67,11 @@ node_st *VDRAprogram(node_st *node)
         decls = DECLS_NEXT(decls);
     }
 
+    // Create the __init function definition node with the assignments as its body.
     node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);
     node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, false);
+    // Assume there's a way t
+
     DECLS_NEXT(lastDecls) = ASTdecls(initFunDef, NULL);
 
     return node; // Return the modified AST
@@ -76,7 +92,6 @@ node_st *VDRAfunbody(node_st *node)
             dimsCount += checkExprDimension(VARDECL_DIMS(vardecl));
             char str[20];
             node_st *exprs = VARDECL_DIMS(vardecl);
-
             while (exprs != NULL)
             {
 
@@ -124,7 +139,7 @@ node_st *VDRAfunbody(node_st *node)
                 VARDECLS_NEXT(newVardeclsNode) = VARDECLS_NEXT(prevVardeclsNode);
                 VARDECLS_NEXT(prevVardeclsNode) = newVardeclsNode;
             }
-            prevVardeclsNode = newVardeclsNode;
+            prevVardeclsNode = varDeclsNode;
         }
         // Keep names free for for loops in next traversal
         i += dimsCount;
