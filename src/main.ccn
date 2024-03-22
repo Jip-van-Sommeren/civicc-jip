@@ -56,7 +56,7 @@ phase VarDefRegularAssignments{
         };
         traversal VarDefRegAss2 {
             uid = VDRAT,
-            nodes = {Program, FunBody}
+            nodes = {FunBody}
         };
 }
 };

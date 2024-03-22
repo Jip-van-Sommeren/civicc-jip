@@ -217,3 +217,21 @@ node_st *exprsToExprs(node_st *dims)
 
     return exprsHead;
 }
+
+void appendExprAndUpdateTail(node_st **exprList, node_st **exprListTail, node_st *newExpr)
+{
+    // Check if the list is empty
+    if (*exprList == NULL)
+    {
+        // This is the first expression in the list.
+        *exprList = ASTexprs(newExpr, NULL);
+        *exprListTail = *exprList; // The tail is the first node itself.
+    }
+    else
+    {
+        // There are already expressions in the list. Append the new expression.
+        node_st *newExprNode = ASTexprs(newExpr, NULL);
+        EXPRS_NEXT(*exprListTail) = newExprNode; // Append new expression to the end.
+        *exprListTail = newExprNode;             // Update the tail to the new node.
+    }
+}
