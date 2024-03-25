@@ -9,185 +9,10 @@
 #include "palm/dbug.h"
 #include "vartypetostring.h"
 #include "palm/ctinfo.h"
+#include "sahelper.h"
 
 #define TABLE_SIZE 128
 #define STACK_SIZE 3
-
-bool getMonOpResultType(enum MonOpType op, enum Type operandType)
-{
-    switch (op)
-    {
-    case MO_neg:
-        // Negation is valid for int and float types and returns a result of the same type
-        if (operandType == CT_int || operandType == CT_float)
-        {
-            return true;
-        }
-        break;
-    case MO_not:
-        // Logical NOT is only valid for booleans and returns a boolean
-        if (operandType == CT_bool)
-        {
-            return true;
-        }
-        break;
-    default:
-        break;
-    }
-    return false; // If the operation is not defined for the given type
-}
-
-enum Type getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type rightType)
-{
-    // Check for type compatibility
-    if (leftType != rightType)
-    {
-        return CT_NULL; // In this simple model, operands must be of the same type
-    }
-    if (leftType == CT_void)
-    {
-        return CT_NULL;
-    }
-
-    switch (op)
-    {
-    case BO_add:
-    case BO_mul:
-        if (leftType == CT_int || leftType == CT_float || leftType == CT_bool)
-        {
-            return leftType;
-        }
-        break;
-    case BO_sub:
-    case BO_div:
-        // These operations are valid for int and float types and return a result of the same type
-        if (leftType == CT_int || leftType == CT_float)
-        {
-            return leftType;
-        }
-        break;
-    case BO_mod:
-        // Modulo is only valid for integers
-        if (leftType == CT_int)
-        {
-            return leftType;
-        }
-        break;
-    case BO_lt:
-    case BO_le:
-    case BO_gt:
-    case BO_ge:
-    case BO_eq:
-        if (leftType == CT_int || leftType == CT_float)
-        {
-            return CT_bool;
-        }
-        break;
-    case BO_ne:
-        // Relational operators are valid for int and float, but always return a boolean
-        if (leftType == CT_int || leftType == CT_float || leftType == CT_bool)
-        {
-            return CT_bool;
-        }
-        break;
-    case BO_and:
-    case BO_or:
-        // Logical operators are only valid for booleans and return a boolean
-        if (leftType == CT_bool)
-        {
-            return leftType;
-        }
-        break;
-    default:
-        break;
-    }
-    return CT_NULL;
-}
-
-enum Type getType(node_st *node)
-{
-    int tmp;
-    switch (NODE_TYPE(node))
-    {
-    case NT_BOOL:
-        tmp = CT_bool;
-        break;
-    case NT_FLOAT:
-        tmp = CT_float;
-        break;
-    case NT_NUM:
-        tmp = CT_int;
-        break;
-    case NT_VAR:
-        tmp = SYMBOLENTRY_TYPE(VAR_SYMBOLENTRY(node));
-        break;
-    case NT_VARLET:
-        tmp = SYMBOLENTRY_TYPE(VARLET_SYMBOLENTRY(node));
-        break;
-    case NT_MONOP:
-        tmp = MONOP_TYPE(node);
-        break;
-    case NT_BINOP:
-        tmp = BINOP_TYPE(node);
-        break;
-    case NT_FUNCALL:
-        tmp = SYMBOLENTRY_TYPE(FUNCALL_SYMBOLENTRY(node));
-        break;
-    case NT_CAST:
-        tmp = CAST_TYPE(node);
-        break;
-    case NT_PARAM:
-        tmp = PARAM_TYPE(node);
-        break;
-    default:
-        tmp = 0;
-        break;
-    }
-    return tmp;
-}
-
-char *getName(node_st *node)
-{
-    static char buffer[64];
-    char *tmp = NULL;
-    switch (NODE_TYPE(node))
-    {
-    case NT_BOOL:
-        tmp = BOOL_VAL(node) ? "true" : "false";
-
-        break;
-    case NT_FLOAT:
-        sprintf(buffer, "%e", FLOAT_VAL(node));
-        return buffer;
-    case NT_NUM:
-        sprintf(buffer, "%d", NUM_VAL(node));
-        return buffer;
-        // Add cases for other node types as needed
-
-    case NT_VAR:
-        tmp = SYMBOLENTRY_NAME(VAR_SYMBOLENTRY(node));
-        break;
-    case NT_VARLET:
-        tmp = SYMBOLENTRY_NAME(VARLET_SYMBOLENTRY(node));
-        break;
-    case NT_MONOP:
-        tmp = MonopToString(MONOP_OP((node)));
-        break;
-    case NT_BINOP:
-        tmp = BinopToString(BINOP_OP((node)));
-        break;
-    case NT_FUNCALL:
-        tmp = SYMBOLENTRY_NAME(FUNCALL_SYMBOLENTRY(node));
-        break;
-    case NT_PARAM:
-        tmp = PARAM_NAME(node);
-        break;
-    default:
-        tmp = 0;
-        break;
-    }
-    return tmp;
-}
 
 void returnTypeError(node_st *returnExpr, node_st *returnNode)
 {
@@ -265,7 +90,7 @@ void incorrectDimsArrayError()
 
 void assignTypeError(node_st *expr, node_st *varlet)
 {
-    CTI(CTI_ERROR, true, "arg %s is type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
+    CTI(CTI_ERROR, true, "arg %s iss type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
     CTIabortOnError();
 }
 
@@ -295,8 +120,9 @@ int countArrayDimensions(node_st *arrExpr)
     }
     else if (NODE_TYPE(arrExpr) == NT_VAR)
     {
-        return checkExprDimension(SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(arrExpr)));
+        return (SYMBOLENTRY_DIMSCOUNT(VAR_SYMBOLENTRY(arrExpr)));
     }
+
     return 0;
 }
 
@@ -438,13 +264,16 @@ node_st *SAcast(node_st *node)
 
 node_st *SAfuncall(node_st *node)
 {
-    TRAVchildren(node);
     // Retrieve the list of expressions (arguments) passed in the function call
+    node_st *entry = FUNCALL_SYMBOLENTRY(node);
+    // Retrieve the list of parameters defined for the function
+    if (SYMBOLENTRY_PARAMS(entry) == NULL && FUNCALL_FUN_ARGS(node))
+    {
+        TRAVchildren(node);
+        return node;
+    }
     node_st *exprs = FUNCALL_FUN_ARGS(node);
     // Retrieve the entry from the symbol table for the function being called
-    node_st *entry = FUNCALL_SYMBOLENTRY(node);
-
-    // Retrieve the list of parameters defined for the function
     node_st *params = SYMBOLENTRY_PARAMS(entry);
 
     int countArgs = 0, countParams = 0;
@@ -457,6 +286,7 @@ node_st *SAfuncall(node_st *node)
         paramType = getType(PARAMS_PARAM(params));
         if (PARAM_DIMS(PARAMS_PARAM(params)) != NULL)
         {
+
             int argDim = countArrayDimensions(EXPRS_EXPR(exprs));
             int paramDim = checkParamDimension(PARAM_DIMS(PARAMS_PARAM(params)));
             if (argDim != paramDim)
@@ -485,7 +315,7 @@ node_st *SAfuncall(node_st *node)
     {
         paramLengthError(countArgs, countParams, FUNCALL_NAME(node));
     }
-
+    TRAVchildren(node);
     return node;
 }
 
@@ -497,6 +327,11 @@ node_st *SAvardecl(node_st *node)
     if (dims == NULL && init != NULL && (VARDECL_TYPE(node) != getType(init)))
     {
         vardeclTypeError(init, node);
+    }
+    // Check if array declaration has correct dims
+    if (dims != NULL && init != NULL && NODE_TYPE(init) == NT_ARREXPR && !checkArrayDimensions(dims, init, VARDECL_TYPE(node)))
+    {
+        incorrectDimsArrayError();
     }
     return node;
 }
@@ -519,6 +354,7 @@ node_st *SAreturn(node_st *node)
 node_st *SAassign(node_st *node)
 {
     TRAVchildren(node);
+    printf("here\n");
     node_st *varlet = ASSIGN_LET(node);
 
     node_st *expr = ASSIGN_EXPR(node);

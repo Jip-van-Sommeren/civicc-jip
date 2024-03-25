@@ -7,5 +7,5 @@ int two ()
 void foo ()
 {
     int [2, two()] a = two();
-    int [3] b = 4;
+    int [two()] b = 4;
 }

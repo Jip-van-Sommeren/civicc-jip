@@ -1,4 +1,5 @@
 #include "palm/hash_table.h"
+#include "palm/memory.h"
 #include "ccn/ccn.h"
 #include "ccngen/ast.h"
 #include "ccngen/trav.h"
@@ -17,25 +18,24 @@ void APinit()
 
 void APfini()
 {
+
     return;
 }
 
 node_st *APfundef(node_st *node)
 {
-    TRAVchildren(node); // Traverse children first if needed
-
     node_st *currentParamsNode = FUNDEF_PARAMS(node);
     node_st *prevParamsNode = NULL; // Keep track of the previous Params node in the linked list
-
     // pseudo fundef __init can be skipped
     if (strcmp(FUNDEF_NAME(node), "__init") == 0)
     {
         return node;
     }
+    // node_st *symbolTable = FUNDEF_SYMBOLTABLE(node);
     while (currentParamsNode != NULL)
+
     {
         node_st *param = PARAMS_PARAM(currentParamsNode);
-
         // Check if the current parameter is an array with dimensions
         if (PARAM_DIMS(param) != NULL)
         {
@@ -47,6 +47,12 @@ node_st *APfundef(node_st *node)
                 char *id = IDS_NAME(ids);
                 node_st *newParam = ASTparam(NULL, strdup(id), PARAM_TYPE(param));
 
+                // dims has to be int type so hardcode it.
+                // node_st *entry = ASTsymbolentry(NULL, strdup(id), CT_int, NODE_BLINE(param), SYMBOLENTRY_SCOPELEVEL(SYMBOLTABLE_ENTRY(FUNDEF_SYMBOLTABLE((node)))), NODE_TYPE(param), 0);
+                // node_st *tempSymbolTable = ASTsymboltable(entry, NULL);
+                // // insert at start of symboltable, since order does not matter in this case
+                // SYMBOLTABLE_NEXT(tempSymbolTable) = SYMBOLTABLE_NEXT(symbolTable);
+                // SYMBOLTABLE_NEXT(symbolTable) = tempSymbolTable;
                 // Create a new Params node for the new parameter
                 node_st *newParamsNode = ASTparams(newParam, NULL);
 
@@ -78,18 +84,17 @@ node_st *APfundef(node_st *node)
         // Move to the next Params node in the list
         currentParamsNode = PARAMS_NEXT(currentParamsNode);
     }
+    TRAVchildren(node);
 
     return node;
 }
 
 node_st *APfuncall(node_st *node)
 {
-    TRAVchildren(node);
-
     node_st *exprsNode = FUNCALL_FUN_ARGS(node);
     node_st *prevExprsNode = NULL; // Keep track of the previous Params node in the linked list
-
     // edge case for pseudo allocate since it is not a real funcall
+
     if (strcmp(FUNCALL_NAME(node), "__allocate") == 0)
     {
         return node;
@@ -99,8 +104,9 @@ node_st *APfuncall(node_st *node)
         node_st *expr = EXPRS_EXPR(exprsNode);
 
         // Check if the current parameter is an array with dimensions
-        if (SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(expr)) != NULL)
+        if (NODE_TYPE(expr) == NT_VAR && SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(expr)) != NULL)
         {
+
             node_st *exprs = SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(expr));
 
             while (exprs != NULL)
@@ -143,6 +149,7 @@ node_st *APfuncall(node_st *node)
                 exprs = EXPRS_NEXT(exprs);
             }
         }
+
         else
         {
             // No dimensions to add, so just move to the next Params node
@@ -152,5 +159,6 @@ node_st *APfuncall(node_st *node)
         // Move to the next Params node in the list
         exprsNode = EXPRS_NEXT(exprsNode);
     }
+    TRAVchildren(node);
     return node;
 }

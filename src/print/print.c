@@ -254,6 +254,13 @@ node_st *PRTfor(node_st *node)
     // Print the block of statements
     TRAVopt(FOR_BLOCK(node));
     printf("}\n");
+    if (FOR_SYMBOLTABLE(node) != NULL)
+    {
+        printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
+        printf("-------------------------------------------------------------\n");
+        TRAVopt(FOR_SYMBOLTABLE(node));
+        printf("-------------------------------------------------------------\n");
+    }
     return node;
 }
 
@@ -530,6 +537,12 @@ node_st *PRTvarlet(node_st *node)
 node_st *PRTvar(node_st *node)
 {
     printf("%s", VAR_NAME(node));
+    if (VAR_INDICES(node) != NULL)
+    {
+        printf("[");
+        TRAVdo(VAR_INDICES(node));
+        printf("] ");
+    }
     return node;
 }
 

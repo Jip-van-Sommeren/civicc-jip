@@ -236,13 +236,13 @@ dowhile: DO stmt_block WHILE BRACKET_L expr BRACKET_R SEMICOLON
        ;
 
 for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block
-   { $$ = ASTfor($6, $8, NULL, $10, $4); AddLocToNode($$, &@1, &@$);}
+   { $$ = ASTfor($6, $8, NULL, $10, $4, true); AddLocToNode($$, &@1, &@$);}
    | FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
-   { $$ = ASTfor($6, $8, $10, $12, $4); AddLocToNode($$, &@1, &@$);}
+   { $$ = ASTfor($6, $8, $10, $12, $4, true); AddLocToNode($$, &@1, &@$);}
    | FOR BRACKET_L ID LET expr COMMA expr BRACKET_R stmt_block
-   { $$ = ASTfor($5, $7, NULL, $9, $3); AddLocToNode($$, &@1, &@$);}
+   { $$ = ASTfor($5, $7, NULL, $9, $3, false); AddLocToNode($$, &@1, &@$);}
    | FOR BRACKET_L ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
-   { $$ = ASTfor($5, $7, $9, $11, $3); AddLocToNode($$, &@1, &@$);}
+   { $$ = ASTfor($5, $7, $9, $11, $3, false); AddLocToNode($$, &@1, &@$);}
    ;
 
 assign: varlet LET expr SEMICOLON
@@ -280,14 +280,14 @@ var_decl_tail: SEMICOLON
 
 varlet: ID
       { $$ = ASTvarlet(NULL, $1); AddLocToNode($$, &@1, &@$);}
-      | ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R
+      | ID SQUARE_BRACKET_L exprs SQUARE_BRACKET_R
       { $$ = ASTvarlet($3, $1); AddLocToNode($$, &@1, &@$);}
       ;
 
 var: ID
    { $$ = ASTvar(NULL, $1); AddLocToNode($$, &@1, &@$);}
-   | ID SQUARE_BRACKET_L ids SQUARE_BRACKET_R
-   { $$ = ASTvarlet($3, $1); AddLocToNode($$, &@1, &@$);}
+   | ID SQUARE_BRACKET_L exprs SQUARE_BRACKET_R
+   { $$ = ASTvar($3, $1); AddLocToNode($$, &@1, &@$);}
    ;
 
 expr: expr PLUS expr

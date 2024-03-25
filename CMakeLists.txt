@@ -32,7 +32,9 @@ add_executable(civicc ${FLEX_CivicLexer_OUTPUTS} ${BISON_CivicParser_OUTPUTS}
     src/main.c src/print/print.c src/scanparse/scanParse.c
     src/global/globals.c src/global/globals.h src/vartypetostring.c
 
-    src/symboltable/symboltable.c src/symboltable/semanticanalysis.c src/arrayparam/arrayparam.c src/booldisjunctionconjunction/booldisjunctionconjunction.c
+    src/symboltable/symboltable.c src/symboltable/semanticanalysis.c  src/symboltable/sahelper.c 
+    src/arrayparam/arrayparam.c src/arrayparam/flattenarrayindex.c src/booldisjunctionconjunction/booldisjunctionconjunction.c
+    src/booldisjunctionconjunction/booleancast.c
     # Youre free to remove the demo directory and these entries.
     src/varinitregassignment/vardef.c  src/varinitregassignment/vardef2.c src/varinitregassignment/vardefhelper.c 
 )

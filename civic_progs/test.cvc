@@ -2,26 +2,32 @@ int c = 5;
 int func(int b, int d, float f)
 {
     int g = d;
-    int[4, 4] mat = [[1,2,3,4], [1,2,3,4], [1,2,3,4], [1,2,3,4]];
-
+    int[4, 4] mat = [[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4]];
     void foo(){
         int z = 6;
         return;
     }
 
     void bak(int [m, n] a){
-        
+        bar(1.0, a, 2);
     }
-    void bar(float n, int m, int [o, p] array){
+
+    void baf(int [m, n] a){
+        int uo = 4;
+        bar(1.0, a, 2);
+    }
+
+    void bar(float n,  int [o, p] array, int m){
         int x = 5 + m;
         float h = 0.1 + n;
         foo();
         bak(array);
+        baf(array);
         return;
     }
     bak(mat);
     
-    bar(f, b, mat);
+    bar(f,  mat, b);
     return g + 4 + d;
 }
 

@@ -10,7 +10,8 @@ start phase RootPhase {
         SemanticAnalysis;
         VarDefRegularAssignments;
         ArrayParameter;
-        BoolDisConjunction;
+        BoolOperations;
+        FlattenArray;
         Print;
     }
 };
@@ -23,7 +24,7 @@ phase SemanticAnalysis {
     actions {
         traversal SymbolTableMake {
             uid = ST,
-            nodes = ({Program, VarDecl, Param, Return} | Linked) | Decl,
+            nodes = ({Program, For, VarDecl, Param, Return} | Linked) | Decl,
             travdata {
                 user scopeStackptr scopeStack,
                 user htable_stptr unresolvedFuncall
@@ -42,10 +43,23 @@ traversal ArrayParameter {
     nodes = {FunDef, FunCall}
 };
 
+traversal FlattenArray {
+    uid = FA,
+    nodes = {For}
+};
 
-traversal BoolDisConjunction {
-    uid = DBC,
-    nodes = {Binop}
+phase BoolOperations{
+    actions {
+        traversal BoolDisConjunction {
+        uid = DBC,
+        nodes = {Binop}
+        };
+        traversal BooleanCast {
+        uid = BC,
+        nodes = {Cast}
+        };
+    }
+
 };
 
 phase VarDefRegularAssignments{
@@ -261,6 +275,7 @@ node DoWhile {
 
 node For {
     children {
+        SymbolTable symbolTable,
         Expr start_expr { constructor, mandatory },
         Expr stop { constructor, mandatory },
         Expr step { constructor },
@@ -268,7 +283,8 @@ node For {
     },
 
     attributes {
-        string var {constructor}
+        string var {constructor},
+        bool newVar {constructor}
     }
 };
 
@@ -358,14 +374,17 @@ node SymbolTable {
 };
 
 node SymbolEntry {
+    children {
+        Exprs dims { constructor }
+        },
     attributes {
-        Exprs dims {constructor},
-        Params params {constructor},
+        Params params,
         string name { constructor },
         Type type { constructor },
         int declaredAtLine { constructor },
         int scopeLevel { constructor },
-        int nodetype { constructor }
+        int nodetype { constructor },
+        int dimsCount {constructor}
     }
 };
 
