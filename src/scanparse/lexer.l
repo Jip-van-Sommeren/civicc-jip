@@ -10,6 +10,10 @@
 #include "palm/str.h"
 #include "global/globals.h"
 #include "palm/ctinfo.h"
+#include <limits.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 // Use for error messages, see parser.y
 extern int yyerror(char *errname);
@@ -86,8 +90,25 @@ int yycolumn = 1;
                              FILTER( ID);
                            }
 
-[0-9]+                     { yylval.cint=atoi(yytext);
-                             FILTER( NUM);
+[0-9]+                     { char *endptr;
+long int num = strtol(yytext, &endptr, 10);
+
+// Check if the whole string was valid and no overflow/underflow occurred
+if (*endptr == '\0' && errno != ERANGE) {
+    // Check if it's within the 32-bit int range
+    if (num >= INT_MIN && num <= INT_MAX) {
+        yylval.cint = (int)num;
+        FILTER(NUM);
+    } else {
+        // Handle out-of-range error
+        fprintf(stderr, "Number out of range for 32-bit int: %s\n", yytext);
+        // You might want to set an error flag or take other appropriate action here
+    }
+} else {
+    // Handle invalid input
+    fprintf(stderr, "Invalid integer: %s\n", yytext);
+    // You might want to set an error flag or take other appropriate action here
+}
                            }
 
 [0-9]+"."[0-9]+([eE][-+]?[0-9]+)?   { yylval.cflt = atof(yytext);

@@ -147,12 +147,20 @@ funbody: vardecls fundefs stmts
 
 globdef: EXPORT ctype ID SEMICOLON
        { $$ = ASTglobdef(NULL, NULL, $3, $2, true); AddLocToNode($$, &@1, &@$);}
+       | ctype SQUARE_BRACKET_L exprs SQUARE_BRACKET_R ID SEMICOLON
+       { $$ = ASTglobdef($3, NULL, $5, $1, false); AddLocToNode($$, &@1, &@$);}
        | ctype ID SEMICOLON
        { $$ = ASTglobdef(NULL, NULL, $2, $1, false); AddLocToNode($$, &@1, &@$);}
        | EXPORT ctype ID LET expr SEMICOLON
        { $$ = ASTglobdef(NULL, $5, $3, $2, true); AddLocToNode($$, &@1, &@$);}
        | ctype ID LET expr SEMICOLON
        { $$ = ASTglobdef(NULL, $4, $2, $1, false); AddLocToNode($$, &@1, &@$);}
+       | ctype SQUARE_BRACKET_L exprs SQUARE_BRACKET_R ID LET expr SEMICOLON
+       { $$ = ASTglobdef($3, $7, $5, $1, false); AddLocToNode($$, &@1, &@$);}
+       | EXPORT ctype SQUARE_BRACKET_L exprs SQUARE_BRACKET_R ID LET expr SEMICOLON
+       { $$ = ASTglobdef($4, $8, $6, $2, false); AddLocToNode($$, &@1, &@$);}
+       | EXPORT ctype SQUARE_BRACKET_L exprs SQUARE_BRACKET_R ID SEMICOLON
+       { $$ = ASTglobdef($4, NULL, $6, $2, true); AddLocToNode($$, &@1, &@$);}
        ;
 
 globdecl: EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON

@@ -32,7 +32,7 @@ phase SemanticAnalysis {
         };
         traversal SemanticAnalysisTraversal {
             uid = SA,
-            nodes = {Cast,  VarDecl, FunCall, Return, Binop, Monop, Assign}
+            nodes = {Cast, GlobDef, VarDecl, FunCall, Return, Binop, Monop, Assign}
 
         };
 }

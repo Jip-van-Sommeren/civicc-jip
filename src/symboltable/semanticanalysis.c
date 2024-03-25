@@ -94,6 +94,18 @@ void assignTypeError(node_st *expr, node_st *varlet)
     CTIabortOnError();
 }
 
+void intOutOfRangeError()
+{
+    CTI(CTI_ERROR, true, "integer out of range\n");
+    CTIabortOnError();
+}
+
+void floatOutOfRangeError()
+{
+    CTI(CTI_ERROR, true, "integer out of range\n");
+    CTIabortOnError();
+}
+
 int countArrayDimensions(node_st *arrExpr)
 {
 
@@ -204,6 +216,13 @@ bool checkArrayDimensions(node_st *dims, node_st *init, enum Type type)
     // Step 2: Check the initializer against expected dimensions.
     return checkInitializer(init, expectedDims, 0, dimCount, type);
 }
+void checkIntegerRange(int value)
+{
+    if (value < INT32_MIN || value > INT32_MAX)
+    {
+        intOutOfRangeError();
+    }
+}
 
 void SAinit()
 {
@@ -226,6 +245,31 @@ node_st *SAmonop(node_st *node)
     else
     {
         monopTypeError(type, MONOP_OP(node));
+    }
+    return node;
+}
+
+node_st *SAglobdef(node_st *node)
+{
+    TRAVchildren(node);
+    node_st *init = GLOBDEF_INIT(node);
+
+    node_st *dims = GLOBDEF_DIMS(node);
+    if (init != NULL && NODE_TYPE(init) == NT_NUM)
+    {
+
+        int num = NUM_VAL(init);
+        printf("%d\n", num);
+        checkIntegerRange(num);
+    }
+    if (dims == NULL && init != NULL && (GLOBDEF_TYPE(node) != getType(init)))
+    {
+        vardeclTypeError(init, node);
+    }
+    // Check if array declaration has correct dims
+    if (dims != NULL && init != NULL && NODE_TYPE(init) == NT_ARREXPR && !checkArrayDimensions(dims, init, GLOBDEF_TYPE(node)))
+    {
+        incorrectDimsArrayError();
     }
     return node;
 }
@@ -323,7 +367,13 @@ node_st *SAvardecl(node_st *node)
 {
     TRAVchildren(node);
     node_st *init = VARDECL_INIT(node);
+
     node_st *dims = VARDECL_DIMS(node);
+    if (init != NULL && NODE_TYPE(init) == NT_NUM)
+    {
+        long long num = NUM_VAL(init);
+        checkIntegerRange(num);
+    }
     if (dims == NULL && init != NULL && (VARDECL_TYPE(node) != getType(init)))
     {
         vardeclTypeError(init, node);

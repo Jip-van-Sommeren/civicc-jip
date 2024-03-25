@@ -39,28 +39,30 @@ node_st *VDRAprogram(node_st *node)
         {
             // Extract the global definition node.
             node_st *globDef = DECLS_DECL(decls);
-
-            // Create an assignment statement for the global variable initialization.
-            node_st *var = ASTvarlet(NULL, strdup(GLOBDEF_NAME(globDef)));
-            node_st *assign = ASTassign(var, makeExpr(GLOBDEF_INIT(globDef)));
-
-            // Append the assignment to the list.
-            if (assignStmts == NULL)
+            if (GLOBDEF_INIT(globDef) != NULL)
             {
-                // This is the first assignment statement.
-                assignStmts = ASTstmts(assign, NULL);
-                assignStmtsTail = assignStmts; // The tail is the same as head now.
-            }
-            else
-            {
-                // Append to the tail and update the tail pointer.
-                node_st *newStmtsNode = ASTstmts(assign, NULL);
-                STMTS_NEXT(assignStmtsTail) = newStmtsNode; // Append to the end.
-                assignStmtsTail = newStmtsNode;             // Update the tail.
-            }
+                // Create an assignment statement for the global variable initialization.
+                node_st *var = ASTvarlet(NULL, strdup(GLOBDEF_NAME(globDef)));
+                node_st *assign = ASTassign(var, makeExpr(GLOBDEF_INIT(globDef)));
 
-            freeInitExpr(GLOBDEF_INIT(DECLS_DECL(decls)));
-            GLOBDEF_INIT(DECLS_DECL(decls)) = NULL;
+                // Append the assignment to the list.
+                if (assignStmts == NULL)
+                {
+                    // This is the first assignment statement.
+                    assignStmts = ASTstmts(assign, NULL);
+                    assignStmtsTail = assignStmts; // The tail is the same as head now.
+                }
+                else
+                {
+                    // Append to the tail and update the tail pointer.
+                    node_st *newStmtsNode = ASTstmts(assign, NULL);
+                    STMTS_NEXT(assignStmtsTail) = newStmtsNode; // Append to the end.
+                    assignStmtsTail = newStmtsNode;             // Update the tail.
+                }
+
+                freeInitExpr(GLOBDEF_INIT(DECLS_DECL(decls)));
+                GLOBDEF_INIT(DECLS_DECL(decls)) = NULL;
+            }
         }
         else
         {
