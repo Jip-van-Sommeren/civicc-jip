@@ -26,12 +26,13 @@ node_st *VDRATfunbody(node_st *node)
 {
     // Placeholder for the first new assignment statement.
     node_st *newAssignStmts = NULL;
-    // Tail of the new assignment statements list.
     node_st *newAssignStmtsTail = NULL;
 
     node_st *vardecls = FUNBODY_VARDECLS(node);
     node_st *existingStmts = FUNBODY_STMTS(node);
-
+    // added global counter to not rely on sscanf, and possibly introduce errors that way
+    // after testing proofed quite reliable
+    int j = 0;
     while (vardecls != NULL)
     {
         node_st *vardecl = VARDECLS_VARDECL(vardecls);
@@ -40,37 +41,15 @@ node_st *VDRATfunbody(node_st *node)
         {
             node_st *varlet = ASTvarlet(NULL, strdup(VARDECL_NAME(vardecl)));
             VARLET_TYPE(varlet) = VARDECL_TYPE(vardecl);
-            node_st *assign = ASTassign(varlet, makeExpr(VARDECL_INIT(vardecl)));
+            node_st *assign = ASTassign(varlet, CCNcopy(VARDECL_INIT(vardecl)));
             if ((NODE_TYPE(VARDECL_INIT(vardecl)) == NT_FUNCALL && strcmp(FUNCALL_NAME(VARDECL_INIT(vardecl)), "__allocate") == 0))
             {
-                if (newAssignStmts == NULL)
-                {
-                    newAssignStmts = ASTstmts(assign, NULL);
-                    newAssignStmtsTail = newAssignStmts;
-                }
-                else
-                {
-                    // Append to the list and update the tail.
-                    node_st *newStmtsNode = ASTstmts(assign, NULL);
-                    STMTS_NEXT(newAssignStmtsTail) = newStmtsNode;
-                    newAssignStmtsTail = newStmtsNode;
-                }
+                appendAssignStmt(&newAssignStmts, &newAssignStmtsTail, assign);
             }
 
             else if (NODE_TYPE(VARDECL_INIT(vardecl)) == NT_ARREXPR)
             {
-                if (newAssignStmts == NULL)
-                {
-                    newAssignStmts = ASTstmts(assign, NULL);
-                    newAssignStmtsTail = newAssignStmts;
-                }
-                else
-                {
-                    // Append to the list and update the tail.
-                    node_st *newStmtsNode = ASTstmts(assign, NULL);
-                    STMTS_NEXT(newAssignStmtsTail) = newStmtsNode;
-                    newAssignStmtsTail = newStmtsNode;
-                }
+                appendAssignStmt(&newAssignStmts, &newAssignStmtsTail, assign);
             }
 
             else if (VARDECL_DIMS(vardecl) != NULL)
@@ -82,119 +61,52 @@ node_st *VDRATfunbody(node_st *node)
                 node_st *fun_argsTail = NULL;
                 node_st *dims = NULL;
                 node_st *dimsTail = NULL;
-                // // make exprs node for pseudo __allocate funargs
-
                 // make arrays to iterate in reverse order and build the nested for loops
                 int dimsCount = checkExprDimension(VARDECL_DIMS(vardecl));
+                j += dimsCount + 1;
                 node_st *dimsExpr[dimsCount];
                 char *names[dimsCount];
                 int dimsExprIndex = 0;
                 while (exprs != NULL)
                 {
-                    // logic to add loop vardecls
-                    int i = 0;
-                    // get dimscount for variable name logic, since they have been left free in prev traversal
-
-                    sscanf(VAR_NAME(EXPRS_EXPR(exprs)), "tmp_%d", &i);
-                    if (i != 0)
-                    {
-
-                        sprintf(str, "tmp_%d", (i + 1 + dimsCount));
-                        printf("%s\n", str);
-                    }
-                    else
-                    {
-                        sprintf(str, "tmp_%s", VAR_NAME(EXPRS_EXPR(exprs)));
-                    }
-                    // hardcode type, loop index has to be int
+                    j++;
+                    sprintf(str, "tmp_%d", j);
                     // make vardecls for loop iteration and insert them
                     node_st *newVarDecl = ASTvardecl(NULL, NULL, strdup(str), CT_int);
                     node_st *newVardeclsNode = ASTvardecls(newVarDecl, NULL);
                     // make vars for varlet indeces and recursively insert
                     node_st *var = ASTvar(NULL, strdup(str));
 
-                    appendExprAndUpdateTail(&fun_args, &fun_argsTail, makeExpr(EXPRS_EXPR(exprs)));
+                    appendExprAndUpdateTail(&fun_args, &fun_argsTail, CCNcopy(EXPRS_EXPR(exprs)));
                     appendExprAndUpdateTail(&dims, &dimsTail, var);
-                    // super ugly solution but works for now,
-                    // #todo maybe fix?
-                    dimsExpr[dimsExprIndex] = makeExpr(EXPRS_EXPR(exprs));
+
+                    dimsExpr[dimsExprIndex] = CCNcopy(EXPRS_EXPR(exprs));
                     names[dimsExprIndex] = strdup(str);
                     dimsExprIndex++;
 
-                    if (VARDECLS_NEXT(vardecls) != NULL)
-                    {
-                        VARDECLS_NEXT(newVardeclsNode) = VARDECLS_NEXT(vardecls);
-                        VARDECLS_NEXT(vardecls) = newVardeclsNode;
-                    }
-                    else
-                    {
-                        VARDECLS_NEXT(vardecls) = newVardeclsNode;
-                    }
+                    insertVarDeclAfterCurrent(vardecls, newVardeclsNode);
                     vardecls = VARDECLS_NEXT(vardecls);
 
                     exprs = EXPRS_NEXT(exprs);
                 }
-                node_st *innerMostStmt = ASTstmts(assign, NULL); // The innermost statement, initially just the assignment
-                node_st *forLoop = NULL;
-                for (int i = dimsCount; i > 0; i--)
-                {
-                    // Assuming you have a way to access the expression for the ith dimension
-                    // For illustration, let's say you have an array or list `dimExprs` of expressions representing the stop condition for each dimension
-                    node_st *expr = dimsExpr[i - 1]; // Adjust indexing as needed
-                    char *str = names[i - 1];
-                    if (i == dimsCount)
-                    {
-                        // For the innermost loop, include the initial assignment statement
-                        forLoop = ASTfor(ASTnum(0), expr, NULL, innerMostStmt, str, false);
-                    }
-                    else
-                    {
-                        // For outer loops, nest the current `forLoop` as the block of the next loop
-                        forLoop = ASTfor(ASTnum(0), expr, NULL, ASTstmts(forLoop, NULL), str, false);
-                    }
-                }
-
+                node_st *forLoop = createNestedForLoops(dimsExpr, names, dimsCount, assign);
                 VARLET_INDICES(varlet) = dims;
 
                 node_st *funcall = ASTfuncall(fun_args, strdup("__allocate"));
                 FUNCALL_TYPE(funcall) = CT_void;
                 // // make exprStmt to insert into the statements
-                node_st *exprStmt = ASTassign(ASTvarlet(NULL, strdup(VARDECL_NAME(vardecl))), funcall);
+                node_st *assignMem = ASTassign(ASTvarlet(NULL, strdup(VARDECL_NAME(vardecl))), funcall);
 
                 // If there are no new statements yet, this becomes the first one.
-                if (newAssignStmts == NULL)
-                {
-                    // This is the first pair of statements.
-                    newAssignStmts = ASTstmts(exprStmt, ASTstmts(forLoop, NULL)); // exprStmt followed by assign
-                    newAssignStmtsTail = STMTS_NEXT(newAssignStmts);              // The tail is the assign node
-                }
-                else
-                {
-                    // There are existing statements. Append both exprStmt and assign to the list.
-                    node_st *newAssignNode = ASTstmts(forLoop, NULL);             // New assign node
-                    node_st *newExprStmtNode = ASTstmts(exprStmt, newAssignNode); // New exprStmt node, pointing to the assign node
-                    STMTS_NEXT(newAssignStmtsTail) = newExprStmtNode;             // Append newExprStmtNode to the end
-                    newAssignStmtsTail = newAssignNode;                           // Update the tail to the new assign node
-                }
+                appendAssignAndForLoopStmts(&newAssignStmts, &newAssignStmtsTail, assignMem, forLoop);
             }
             else
             {
-                if (newAssignStmts == NULL)
-                {
-                    newAssignStmts = ASTstmts(assign, NULL);
-                    newAssignStmtsTail = newAssignStmts;
-                }
-                else
-                {
-                    // Append to the list and update the tail.
-                    node_st *newStmtsNode = ASTstmts(assign, NULL);
-                    STMTS_NEXT(newAssignStmtsTail) = newStmtsNode;
-                    newAssignStmtsTail = newStmtsNode;
-                }
+                appendAssignStmt(&newAssignStmts, &newAssignStmtsTail, assign);
             }
 
             // Reset the initialization expression of the vardecl.
-            freeInitExpr(VARDECL_INIT(vardecl));
+            CCNfree(VARDECL_INIT(vardecl));
             VARDECL_INIT(vardecl) = NULL;
         }
         vardecls = VARDECLS_NEXT(vardecls);

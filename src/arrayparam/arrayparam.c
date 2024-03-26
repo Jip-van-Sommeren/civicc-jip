@@ -47,12 +47,6 @@ node_st *APfundef(node_st *node)
                 char *id = IDS_NAME(ids);
                 node_st *newParam = ASTparam(NULL, strdup(id), PARAM_TYPE(param));
 
-                // dims has to be int type so hardcode it.
-                // node_st *entry = ASTsymbolentry(NULL, strdup(id), CT_int, NODE_BLINE(param), SYMBOLENTRY_SCOPELEVEL(SYMBOLTABLE_ENTRY(FUNDEF_SYMBOLTABLE((node)))), NODE_TYPE(param), 0);
-                // node_st *tempSymbolTable = ASTsymboltable(entry, NULL);
-                // // insert at start of symboltable, since order does not matter in this case
-                // SYMBOLTABLE_NEXT(tempSymbolTable) = SYMBOLTABLE_NEXT(symbolTable);
-                // SYMBOLTABLE_NEXT(symbolTable) = tempSymbolTable;
                 // Create a new Params node for the new parameter
                 node_st *newParamsNode = ASTparams(newParam, NULL);
 

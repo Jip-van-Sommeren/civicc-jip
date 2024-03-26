@@ -11,6 +11,9 @@
 #include "vartypetostring.h"
 #include "palm/ctinfo.h"
 #include "varinitregassignment/vardefhelper.h"
+#include "arrayhelpers.h"
+
+#define MAX_DIMENSIONS 5
 
 void FAinit()
 {
@@ -23,77 +26,68 @@ void FAfini()
     return;
 }
 
-node_st *FAfor(node_st *node)
+node_st *FAfunbody(node_st *node)
 {
-    node_st *currentForBlock = node;
-    int depth = 1;
-    while (currentForBlock != NULL)
+    node_st *stmts = FUNBODY_STMTS(node); // Assuming this gets the starting point for checking
+    LoopInfo loopInfo = {0, {NULL}};
+    while (stmts != NULL)
     {
-        bool foundNestedFor = false;
-        node_st *max[3] = {NULL, NULL, NULL}; // Array to hold maxX, maxY, maxZ
-
-        // Assuming currentForBlock is defined and valid
-        if (depth >= 1 && depth <= 3)
-        {
-            max[depth - 1] = FOR_STOP(currentForBlock);
-        }
-        // Assuming that the for block can contain multiple statements,
-        // and you have a way to iterate through these statements.
-        node_st *stmts = FOR_BLOCK(currentForBlock); // Get the first statement in the current for block.
-
-        while (stmts != NULL)
-        {
-            // (x * Y * Z) + (y * Z) + z
-            // (x * Y) + y
-            // Check if the statement is a for loop
-            if (NODE_TYPE(STMTS_STMT(stmts)) == NT_FOR)
-            {
-                foundNestedFor = true;
-                currentForBlock = STMTS_STMT(stmts);
-                depth++; // Update currentForBlock to the nested for loop's block
-                break;   // Exit the inner loop as we found a nested for loop
-            }
-            if (NODE_TYPE(STMTS_STMT(stmts)) == NT_ASSIGN)
-            {
-
-                node_st *varlet = ASSIGN_LET(STMTS_STMT(stmts));
-                if (VARLET_INDICES(varlet) != NULL && depth > 1)
-                {
-                    node_st *exprs = VARLET_INDICES(varlet);
-                    node_st *expr = NULL;
-                    while (exprs != NULL)
-                    {
-                        if (expr == NULL)
-                        {
-                            printf("here1\n");
-                            expr = ASTbinop(CCNcopy(EXPRS_EXPR(exprs)), CCNcopy(max[1]), BO_mul);
-                        }
-                        else
-                        {
-                            printf("here2\n");
-                            expr = ASTbinop(expr, CCNcopy(EXPRS_EXPR(exprs)), BO_add);
-                        }
-
-                        exprs = EXPRS_NEXT(exprs);
-                    }
-                    CCNfree(VARLET_INDICES(varlet));
-
-                    VARLET_INDICES(varlet) = ASTexprs(expr, NULL);
-                }
-                // Exit the inner loop as we found a nested for loop
-            }
-
-            // Move to the next statement in the block
-            stmts = STMTS_NEXT(stmts); // Assuming STMTS_NEXT is a way to get the next statement in a block
-        }
-
-        // If no nested for loop was found in the current block, exit the loop
-        if (!foundNestedFor)
-        {
-            break;
-        }
+        processStatementNode(STMTS_STMT(stmts), &loopInfo);
+        stmts = STMTS_NEXT(stmts); // Move to the next statement in the function body
     }
-    printf("%d\n", depth);
+    printf("Max Depth: %d\n", loopInfo.depth);
+    TRAVchildren(node);
+    return node;
+}
 
+node_st *FAfuncall(node_st *node)
+{
+    printf("herre");
+    // Check if the function call is "__allocate"
+    if (strcmp(FUNCALL_NAME(node), "__allocate") == 0)
+    {
+        node_st *exprs = FUNCALL_FUN_ARGS(node); // Get the arguments of the function call
+        node_st *productExpr = NULL;             // This will hold the product of dimensions
+
+        while (exprs != NULL)
+        {
+            if (productExpr == NULL)
+            {
+                // For the first dimension, simply copy it as the starting point of the product
+                productExpr = CCNcopy(EXPRS_EXPR(exprs));
+            }
+            else
+            {
+                // For subsequent dimensions, multiply them with the product expression so far
+                productExpr = ASTbinop(productExpr, CCNcopy(EXPRS_EXPR(exprs)), BO_mul);
+            }
+            exprs = EXPRS_NEXT(exprs); // Move to the next argument
+        }
+
+        // Once the product of all dimensions is calculated, replace the function call arguments
+        // with this single product expression
+        CCNfree(FUNCALL_FUN_ARGS(node));
+        FUNCALL_FUN_ARGS(node) = ASTexprs(productExpr, NULL);
+    }
+    return node;
+}
+
+node_st *FAvardecl(node_st *node)
+{
+    if (VARDECL_DIMS(node) != NULL)
+    {
+        CCNfree(VARDECL_DIMS(node));
+        VARDECL_DIMS(node) = NULL;
+    }
+    return node;
+}
+
+node_st *FAparam(node_st *node)
+{
+    if (PARAM_DIMS(node) != NULL)
+    {
+        CCNfree(PARAM_DIMS(node));
+        PARAM_DIMS(node) = NULL;
+    }
     return node;
 }

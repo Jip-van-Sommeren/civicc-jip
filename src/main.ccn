@@ -45,7 +45,7 @@ traversal ArrayParameter {
 
 traversal FlattenArray {
     uid = FA,
-    nodes = {For}
+    nodes = {FunBody, FunCall, VarDecl, Param}
 };
 
 phase BoolOperations{

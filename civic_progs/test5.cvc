@@ -6,6 +6,7 @@ int two ()
 }
 void foo ()
 {
+    int x = 2;
     int [2, two()] a = two();
     int [two()] b = 4;
 }
