@@ -1,0 +1,11 @@
+void transpose ( int [m , n ] a )
+{
+int i ;
+int j ;
+int [n , m ] b ;
+for ( i = 0 , n ) {
+for ( j = 0 , m ) {
+b [i , j ] = a [j , i ];
+}
+}
+}

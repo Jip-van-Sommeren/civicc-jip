@@ -35,14 +35,12 @@ node_st *FAfunbody(node_st *node)
         processStatementNode(STMTS_STMT(stmts), &loopInfo);
         stmts = STMTS_NEXT(stmts); // Move to the next statement in the function body
     }
-    printf("Max Depth: %d\n", loopInfo.depth);
     TRAVchildren(node);
     return node;
 }
 
 node_st *FAfuncall(node_st *node)
 {
-    printf("herre");
     // Check if the function call is "__allocate"
     if (strcmp(FUNCALL_NAME(node), "__allocate") == 0)
     {
@@ -90,4 +88,17 @@ node_st *FAparam(node_st *node)
         PARAM_DIMS(node) = NULL;
     }
     return node;
+}
+
+node_st *FAarrexpr(node_st *node)
+{
+
+    node_st *flattenedValues = NULL; // This will be the head of the list of flattened values
+    node_st *valuesTail = NULL;      // Keeps track of the tail of the flattened values list
+
+    collectValues(node, &valuesTail, &flattenedValues); // Notice &flattenedValues is passed
+    node_st *newArrayExpr = ASTarrexpr(flattenedValues);
+    // free old node
+    CCNfree(node);
+    return newArrayExpr;
 }

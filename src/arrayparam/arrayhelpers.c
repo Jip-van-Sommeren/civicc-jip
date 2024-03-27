@@ -76,20 +76,85 @@ node_st **extractIndicesFromVarlet(node_st *varlet, int numDims)
     return indices;
 }
 
-void transformAssignForFlattenedArray(node_st *assignStmt, node_st **dims, int numDims)
+node_st **extractIndicesFromVar(node_st *var, int numDims)
+{
+    // Dynamically allocate an array to hold pointers to node_st structures (index expressions).
+    node_st **indices = (node_st **)malloc(numDims * sizeof(node_st *));
+
+    if (indices == NULL)
+    {
+        // Handle memory allocation failure if needed
+        return NULL;
+    }
+
+    // Initialize the array to ensure all pointers are NULL initially.
+    for (int i = 0; i < numDims; ++i)
+    {
+        indices[i] = NULL;
+    }
+
+    node_st *currentExpr = VAR_INDICES(var); // Starting point of the index expressions.
+    int indexCount = 0;                      // To keep track of the number of indices processed.
+
+    // Loop through the index expressions and fill the indices array.
+    while (currentExpr != NULL && indexCount < numDims)
+    {
+        indices[indexCount] = EXPRS_EXPR(currentExpr);
+        currentExpr = EXPRS_NEXT(currentExpr);
+        indexCount++;
+    }
+
+    // Return the array of index expressions.
+    return indices;
+}
+
+void transformAssignForFlattenedArray(node_st *assignStmt, node_st **dims, int numDimsVarlet, int numDimsVar)
 {
     node_st *varlet = ASSIGN_LET(assignStmt);
-    if (VARLET_INDICES(varlet) != NULL && numDims > 1)
+    if (VARLET_INDICES(varlet) != NULL && numDimsVarlet > 1)
     {
-        node_st **indices = extractIndicesFromVarlet(varlet, numDims); // You'll need to implement extractIndicesFromVarlet.
+
+        node_st **indices = extractIndicesFromVarlet(varlet, numDimsVarlet); // You'll need to implement extractIndicesFromVarlet.
 
         // Generate the expression for the flattened index.
-        node_st *flattenedIndexExpr = generateFlattenedIndexExpr(dims, indices, numDims);
+        node_st *flattenedIndexExpr = generateFlattenedIndexExpr(dims, indices, numDimsVarlet);
 
         // Replace the indices in varlet with the new single flattened index.
         CCNfree(VARLET_INDICES(varlet));
         free(indices);
         VARLET_INDICES(varlet) = ASTexprs(flattenedIndexExpr, NULL);
+    }
+    node_st *var = ASSIGN_EXPR(assignStmt);
+    if (VAR_INDICES(var) != NULL && numDimsVar > 1)
+    {
+        node_st *dimsVar[numDimsVar];
+        node_st **indices = extractIndicesFromVar(var, numDimsVar);
+
+        node_st *flattenedIndexExpr = NULL;
+        // extract vardims from decl to get correct order
+        if (SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(var)) != NULL)
+        {
+            node_st *exprs = SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(var));
+            int i = 0;
+            while (exprs != NULL)
+            {
+                dimsVar[i] = EXPRS_EXPR(exprs);
+                i++;
+                exprs = EXPRS_NEXT(exprs);
+            }
+            flattenedIndexExpr = generateFlattenedIndexExpr(dimsVar, indices, numDimsVar);
+        }
+        else
+        {
+            flattenedIndexExpr = generateFlattenedIndexExpr(dims, indices, numDimsVar);
+        }
+
+        // Generate the expression for the flattened index.
+
+        // Replace the indices in varlet with the new single flattened index.
+        CCNfree(VAR_INDICES(var));
+        free(indices);
+        VAR_INDICES(var) = ASTexprs(flattenedIndexExpr, NULL);
     }
 }
 
@@ -193,8 +258,9 @@ void processStatementNode(node_st *node, LoopInfo *loopInfo)
         // Here you can apply your logic for index transformation
         if (localLoopInfo.depth > 1)
         { // Ensure there is at least one loop surrounding this assignment
-            int dimsCount = checkExprDimension(VARLET_INDICES(ASSIGN_LET(node)));
-            transformAssignForFlattenedArray(node, localLoopInfo.dims, dimsCount);
+            int dimsCountVarlet = checkExprDimension(VARLET_INDICES(ASSIGN_LET(node)));
+            int dimsCountVar = checkExprDimension(VAR_INDICES(ASSIGN_EXPR(node)));
+            transformAssignForFlattenedArray(node, localLoopInfo.dims, dimsCountVarlet, dimsCountVar);
         }
         break;
     default:
@@ -204,5 +270,35 @@ void processStatementNode(node_st *node, LoopInfo *loopInfo)
     if (localLoopInfo.depth > loopInfo->depth)
     {
         loopInfo->depth = localLoopInfo.depth; // Update max depth if the local depth is greater
+    }
+}
+
+void collectValues(node_st *expr, node_st **valuesTail, node_st **flattenedValues)
+{
+    if (expr == NULL)
+        return;
+
+    if (NODE_TYPE(expr) == NT_ARREXPR)
+    {
+        node_st *nestedExprs = ARREXPR_EXPRS(expr);
+        while (nestedExprs != NULL)
+        {
+            collectValues(EXPRS_EXPR(nestedExprs), valuesTail, flattenedValues);
+            nestedExprs = EXPRS_NEXT(nestedExprs);
+        }
+    }
+    else
+    {
+        node_st *newNode = ASTexprs(CCNcopy(expr), NULL);
+        if (*valuesTail == NULL)
+        {
+            *flattenedValues = newNode;
+            *valuesTail = newNode;
+        }
+        else
+        {
+            EXPRS_NEXT(*valuesTail) = newNode;
+            *valuesTail = newNode;
+        }
     }
 }
