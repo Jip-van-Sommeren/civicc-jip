@@ -9,3 +9,4 @@ node_st *createNestedForLoops(node_st **dimsExpr, char **names, int dimsCount, n
 void appendAssignAndForLoopStmts(node_st **stmtsHead, node_st **stmtsTail, node_st *assignMem, node_st *forLoop);
 void insertVarDeclAfterCurrent(node_st *vardecls, node_st *newVardeclsNode);
 void insertVarDecl(node_st **head, node_st *newVardeclsNode, node_st *prevVardeclsNode);
+void insertStmts(node_st **head, node_st *newStmtsNode, node_st *prevStmtsNode);

@@ -308,6 +308,10 @@ node_st *SAcast(node_st *node)
 
 node_st *SAfuncall(node_st *node)
 {
+    if (strcmp(FUNCALL_NAME(node), "__allocate") == 0)
+    {
+        return node;
+    }
     // Retrieve the list of expressions (arguments) passed in the function call
     node_st *entry = FUNCALL_SYMBOLENTRY(node);
     // Retrieve the list of parameters defined for the function
@@ -404,13 +408,13 @@ node_st *SAreturn(node_st *node)
 node_st *SAassign(node_st *node)
 {
     TRAVchildren(node);
-    printf("here\n");
     node_st *varlet = ASSIGN_LET(node);
 
     node_st *expr = ASSIGN_EXPR(node);
-
-    printf("node type :%d \n", NODE_TYPE(expr));
-
+    if (NODE_TYPE(expr) == NT_FUNCALL && strcmp(FUNCALL_NAME(expr), "__allocate") == 0)
+    {
+        return node;
+    }
     if (getType(expr) != getType(varlet))
     {
         assignTypeError(expr, varlet);

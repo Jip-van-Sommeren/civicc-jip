@@ -15,6 +15,8 @@
 #define TABLE_SIZE 128
 #define STACK_SIZE 4
 
+static bool inForLoop = false;
+static int forCounter = 0;
 /**
  * @fn reportDoubleDeclarationError
  */
@@ -63,7 +65,6 @@ void insertSymbol(struct data_st *data, char *name, enum Type type, int declared
 
     if (params != NULL)
     {
-        printf("here5\n");
         SYMBOLENTRY_PARAMS(newentry) = params;
     }
     if (!HTinsert(currentSymbolTable, name, newentry))
@@ -161,6 +162,7 @@ int ST_currentScopeLevel(struct data_st *data)
 void STinit()
 {
     struct data_st *data = DATA_ST_GET();
+
     // Ensure data is not NULL
     if (!data)
     {
@@ -271,7 +273,6 @@ node_st *STvardecl(node_st *node)
 
 void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *identifier, int declaredAtLine, node_st *params)
 {
-    printf("gere\n");
     SYMBOLENTRY_TYPE(entry) = type;
     SYMBOLENTRY_DECLAREDATLINE(entry) = declaredAtLine;
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
@@ -288,6 +289,7 @@ void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *
 node_st *STfundef(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
+    forCounter = 1;
 
     // Retrieve the current scope level from the data structure
 
@@ -333,30 +335,24 @@ node_st *STfor(node_st *node)
     int nodetype = NT_VAR;
     // check if initializer
     node_st *entry = findLink(data, identifier);
-    if (entry == NULL && newVar)
+    char str[10];
+    sprintf(str, "for_%s_%d", identifier, forCounter);
+    if (findLink(data, str) != NULL)
     {
-        // Only insert the symbol if it was not already declared
-        ST_pushScopeLevel(data, type);
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL, 0, NULL);
+        forCounter++;
+        sprintf(str, "for_%s_%d", identifier, forCounter);
     }
-    else if (entry != NULL && newVar)
-    {
-        ST_pushScopeLevel(data, type);
-        char str[20];
-        sprintf(str, "for_%s", identifier);
-        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL);
-    }
-    else
-    {
-        ST_pushScopeLevel(data, type);
-    }
+    // set new name as var name
+    insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL);
+    MEMfree(FOR_VAR(node));
+    FOR_VAR(node) = strdup(str);
     // sert the function symbol into the symbol table with the current scope level
     //  Increment the scope level for the function body
+    inForLoop = true;
     TRAVchildren(node);
+    inForLoop = false;
     // Once done processing the function body, decrement the scope level to exit the function's scope
-    node_st *symboltable = ST_popScopeLevel(data);
     // Assign symboltable to fundef node
-    FOR_SYMBOLTABLE(node) = symboltable;
     return node;
 }
 
@@ -460,9 +456,30 @@ node_st *STvar(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VAR_NAME(node);
+
     node_st *entry = findLink(data, name);
-    if (entry != NULL)
+    ;
+    if (entry == NULL && inForLoop)
     {
+        char str2[10];
+        sprintf(str2, "for_%s_%d", name, forCounter);
+        entry = findLink(data, str2);
+        if (entry != NULL)
+        {
+            VAR_SYMBOLENTRY(node) = entry;
+            VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
+            MEMfree(VAR_NAME(node));
+            VAR_NAME(node) = strdup(str2);
+        }
+        else
+        {
+            printf("%s\n", str2);
+            printf("here2\n");
+        }
+    }
+    else if (entry != NULL)
+    {
+        entry = findLink(data, name);
         VAR_SYMBOLENTRY(node) = entry;
         VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
     }
@@ -480,7 +497,6 @@ node_st *STvar(node_st *node)
 node_st *STvarlet(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
-    printf("here\n");
     char *name = VARLET_NAME(node);
     node_st *entry = findLink(data, name);
     if (entry != NULL)
@@ -510,10 +526,7 @@ node_st *STfuncall(node_st *node)
     node_st *entry = findLink(data, name);
     if (entry != NULL)
     {
-        if (SYMBOLENTRY_PARAMS(entry) == NULL)
-        {
-            printf("here\n");
-        }
+
         FUNCALL_SYMBOLENTRY(node) = entry;
 
         FUNCALL_TYPE(node) = SYMBOLENTRY_TYPE(entry);

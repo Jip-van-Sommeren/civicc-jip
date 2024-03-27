@@ -1,0 +1,91 @@
+Overview
+========
+
+There are three binaries in the toolchain:
+
+- The compiler "civcc", which compiles CiviC source code to assembly source
+
+- The assembler "civas", which compiles assembly source to an object file that
+  can be run by the VM.
+
+- The virtual machine "civvm", which runs one or more object files, one of
+  which should export a "main" function.
+
+Additionally, there is a run script "civrun" which takes CiviC source files as
+argument and runs them through the entire pipeline, deleting intermediate files
+afterwards. E.g. for the first assignment you may want to run:
+$ bin/civrun euclid.cvc
+Please enter an integer value: 60
+Please enter an integer value: 45
+15
+
+Or even:
+$ echo 60 45 | bin/civrun euclid.cvc 2>&1
+15
+
+Note that civrun requires Python 3.7 or newer to run. See `civrun --help` for
+more options.
+
+The toolchain also contains the file "civic.h" which defines the CiviC standard
+library supported by the VM. It is practical to keep this in the same directory
+as the reference compiler binary, because the compiler adds the folder in which
+it resides in to the include directories of the C preprocessor (along with the
+current working directory).
+
+You may want to add the toolchain directory to your $PATH so you can run the
+tools without having to prefix "<...>/bin/" every time when using the
+toolchain. E.g. add to your ~/.bashrc:
+export PATH=$PATH:<directory_where_you_unpacked_the_toolchain>/bin
+
+You can also enable bash autocompletions for the toolchain commands by adding
+the following line to your ~/.bashrc:
+source <directory_where_you_unpacked_the_toolchain>/bin/civ_complete.bash
+
+If you now run civrun --breakpoint <TAB><TAB> for example, it will autocomplete
+all possible breakpoints.
+
+Reference compiler usage
+========================
+
+You can use the output of the reference compiler "civcc" as benchmark for your
+own compiler. Apart from the extensions in the language reference, it
+implements constant propagation/folding on compiler-generated variables, and
+other more advanced optimizations under the --extra-opts flag.
+You are not expected to reproduce this, these phases are just there to show
+you how even simple optimizations can have a significant effect on code size.
+
+Some other remarks about the compiler:
+
+- The reference compiler includes some language extensions which you are
+  not expected to reproduce, but are useful for you to know about.
+  The extensions are:
+  * New assignment operators:
+    The compiler adds support for the `+=`, `-=`, `*=`, `/=` and `%=` operators.
+    All the assignment expressions `a ⊚= b` are semantically equivalent to
+    `a = a ⊚ b`.
+  * Extended integer literals:
+    The compiler extends the integer literals to be closer to C.
+    Apart from decimal numbers, binary (0b0101), octal (0o1357) and hexadecimal
+    (0x6aF) numbers are also supported. The syntax follows the C standard:
+    http://port70.net/~nsz/c/c11/n1570.html#6.4.4.1.
+  * Macro expansion using the C Preprocessor:
+    As mentioned before, the compiler supports macro expansion with allows us
+    to use #include directives. Because the C Preprocessor is used for this,
+    the syntax is the same as macro expansion in C.
+
+- All AST optimizations can be disabled with the --no-opt flag. Note that even
+  with the --no-opt flag, there are still some very basic assembly instruction
+  optimizations which can not be disabled.
+
+- By default the compiler prints assembly to stdout, so you can use it with unix
+  pipes.
+
+- the "--breakpoint ..." argument makes the compiler stop after a certain phase
+  and print the AST (or assembly) at that point. This can be very useful when
+  you are confused about what a milestone should do. You can compile simple
+  example file and see how the reference compiler transforms it in the different
+  phase. Use --no-opt as well if you want to get something closer to what your
+  own compiler should do (since you don't need to implement optimizations).
+  E.g. when you are implementing context analysis and want to compare your
+  output to that of the reference compiler, use
+  "--no-opt --breakpoint ContextAnalysisPhase".

@@ -125,7 +125,7 @@ void transformAssignForFlattenedArray(node_st *assignStmt, node_st **dims, int n
         VARLET_INDICES(varlet) = ASTexprs(flattenedIndexExpr, NULL);
     }
     node_st *var = ASSIGN_EXPR(assignStmt);
-    if (VAR_INDICES(var) != NULL && numDimsVar > 1)
+    if (NODE_TYPE(var) == NT_VAR && VAR_INDICES(var) != NULL && numDimsVar > 1)
     {
         node_st *dimsVar[numDimsVar];
         node_st **indices = extractIndicesFromVar(var, numDimsVar);
@@ -188,10 +188,24 @@ node_st *extractLoopStopExpr(node_st *node)
         stopExpr = FOR_STOP(node);
         break;
     case NT_WHILE:
-        stopExpr = BINOP_RIGHT(WHILE_COND(node));
+        if (NODE_TYPE(DOWHILE_COND(node)) == NT_BOOL)
+        {
+            stopExpr = WHILE_BLOCK(node);
+        }
+        else
+        {
+            stopExpr = BINOP_RIGHT(DOWHILE_COND(node));
+        }
         break;
     case NT_DOWHILE:
-        stopExpr = BINOP_RIGHT(DOWHILE_COND(node));
+        if (NODE_TYPE(DOWHILE_COND(node)) == NT_BOOL)
+        {
+            stopExpr = DOWHILE_BLOCK(node);
+        }
+        else
+        {
+            stopExpr = BINOP_RIGHT(DOWHILE_COND(node));
+        }
         break;
 
     default:
@@ -233,8 +247,18 @@ void processStatementNode(node_st *node, LoopInfo *loopInfo)
     switch (NODE_TYPE(node))
     {
     case NT_IFELSE:
-        processStatementNode(IFELSE_THEN(node), &localLoopInfo);
-        processStatementNode(IFELSE_ELSE_BLOCK(node), &localLoopInfo);
+        innerStmts = IFELSE_THEN(node);
+        while (innerStmts != NULL)
+        {
+            processStatementNode(STMTS_STMT(innerStmts), &localLoopInfo);
+            innerStmts = STMTS_NEXT(innerStmts);
+        }
+        innerStmts = IFELSE_ELSE_BLOCK(node);
+        while (innerStmts != NULL)
+        {
+            processStatementNode(STMTS_STMT(innerStmts), &localLoopInfo);
+            innerStmts = STMTS_NEXT(innerStmts);
+        }
         break;
     case NT_FOR:
     case NT_WHILE:
@@ -259,7 +283,12 @@ void processStatementNode(node_st *node, LoopInfo *loopInfo)
         if (localLoopInfo.depth > 1)
         { // Ensure there is at least one loop surrounding this assignment
             int dimsCountVarlet = checkExprDimension(VARLET_INDICES(ASSIGN_LET(node)));
-            int dimsCountVar = checkExprDimension(VAR_INDICES(ASSIGN_EXPR(node)));
+            printf("NODE TYPE = %d\n", NODE_TYPE(ASSIGN_EXPR(node)));
+            int dimsCountVar = 0;
+            if (NODE_TYPE(ASSIGN_EXPR(node)) == NT_VAR)
+            {
+                dimsCountVar = checkExprDimension(VAR_INDICES(ASSIGN_EXPR(node)));
+            }
             transformAssignForFlattenedArray(node, localLoopInfo.dims, dimsCountVarlet, dimsCountVar);
         }
         break;

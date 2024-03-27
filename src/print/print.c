@@ -23,6 +23,10 @@ node_st *PRTprogram(node_st *node)
     printf("Program:\n");
     TRAVdo(PROGRAM_SYMBOLTABLE(node));
     TRAVdo(PROGRAM_DECLS(node));
+    if (PROGRAM_CONSTANTTABLE(node) != NULL)
+    {
+        TRAVdo(PROGRAM_CONSTANTTABLE(node));
+    }
     return node;
 }
 
@@ -254,13 +258,7 @@ node_st *PRTfor(node_st *node)
     // Print the block of statements
     TRAVopt(FOR_BLOCK(node));
     printf("}\n");
-    if (FOR_SYMBOLTABLE(node) != NULL)
-    {
-        printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
-        printf("-------------------------------------------------------------\n");
-        TRAVopt(FOR_SYMBOLTABLE(node));
-        printf("-------------------------------------------------------------\n");
-    }
+
     return node;
 }
 
@@ -583,5 +581,41 @@ node_st *PRTtern(node_st *node)
     printf(": ");
     TRAVopt(TERN_ELSE_EXPR(node));
     printf("\n");
+    return node;
+}
+
+node_st *PRTconstantentry(node_st *node)
+{
+    TRAVdo(CONSTANTENTRY_VAL(node));
+    return node;
+}
+
+node_st *PRTconstanttable(node_st *node)
+{
+    TRAVdo(CONSTANTTABLE_ENTRY(node));
+
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *stmts = CONSTANTTABLE_NEXT(node);
+
+    while (stmts != NULL)
+    {
+        TRAVdo(CONSTANTTABLE_ENTRY(stmts));
+        // Move to the next set of declessions
+        stmts = CONSTANTTABLE_NEXT(stmts);
+    }
+
+    return node;
+}
+
+node_st *PRTassembly(node_st *node)
+{
+
+    return node;
+}
+
+node_st *PRTassemblylist(node_st *node)
+{
+
     return node;
 }

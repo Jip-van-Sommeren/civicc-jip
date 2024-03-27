@@ -247,10 +247,6 @@ for: FOR BRACKET_L INT_TYPE ID LET expr COMMA expr BRACKET_R stmt_block
    { $$ = ASTfor($6, $8, NULL, $10, $4, true); AddLocToNode($$, &@1, &@$);}
    | FOR BRACKET_L INT_TYPE ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
    { $$ = ASTfor($6, $8, $10, $12, $4, true); AddLocToNode($$, &@1, &@$);}
-   | FOR BRACKET_L ID LET expr COMMA expr BRACKET_R stmt_block
-   { $$ = ASTfor($5, $7, NULL, $9, $3, false); AddLocToNode($$, &@1, &@$);}
-   | FOR BRACKET_L ID LET expr COMMA expr COMMA expr BRACKET_R stmt_block
-   { $$ = ASTfor($5, $7, $9, $11, $3, false); AddLocToNode($$, &@1, &@$);}
    ;
 
 assign: varlet LET expr SEMICOLON

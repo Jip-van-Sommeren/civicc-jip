@@ -7,11 +7,13 @@
 start phase RootPhase {
     actions {
         pass SPdoScanParse;
-        SemanticAnalysis;
         VarDefRegularAssignments;
+        SemanticAnalysis;
         ArrayParameter;
         BoolOperations;
         FlattenArray;
+        Optimizations;
+        CodeGen;
         Print;
     }
 };
@@ -73,6 +75,37 @@ phase VarDefRegularAssignments{
             nodes = {FunBody}
         };
 }
+};
+
+phase Optimizations {
+    actions {
+        traversal ForToWhile {
+            uid = FTW,
+            nodes = {FunBody}
+        };
+        traversal ForToWhileTwo {
+            uid = FTWT,
+            nodes = {For}
+        };
+    }
+};
+
+phase CodeGen {
+    actions {
+        traversal ConstantTableMake {
+            uid = CONSTT,
+            nodes = {Program, Num, Float},
+            travdata {
+                user htable_stptr constTable,
+                int index
+            }
+        };
+        traversal MakeAssembly {
+            uid = MA,
+            nodes = {Program, FunDef}
+
+        };
+    }
 };
 
 /*****************************************************************************
@@ -161,7 +194,9 @@ nodeset Linked {
 root node Program {
     children {
         SymbolTable symbolTable,
-        Decls decls { constructor, mandatory }
+        Decls decls { constructor, mandatory },
+        ConstantTable constantTable,
+        AssemblyList assemblyList
     }
 };
 
@@ -234,7 +269,8 @@ node FunDef {
     children {
         SymbolTable symbolTable,
         FunBody body { constructor },
-        Params params { constructor }
+        Params params { constructor },
+        AssemblyList assemblyList
     },
     attributes {
         string name { constructor },
@@ -275,7 +311,6 @@ node DoWhile {
 
 node For {
     children {
-        SymbolTable symbolTable,
         Expr start_expr { constructor, mandatory },
         Expr stop { constructor, mandatory },
         Expr step { constructor },
@@ -436,7 +471,8 @@ node Var {
 
 node Num {
     attributes {
-        int val { constructor }
+        int val { constructor },
+        ConstantEntry link
     }
 };
 
@@ -450,12 +486,43 @@ node Tern {
 
 node Float {
     attributes {
-        float val { constructor }
+        float val { constructor },
+        ConstantEntry link
     }
 };
 
 node Bool {
     attributes {
-        bool val { constructor }
+        bool val { constructor },
+        ConstantEntry link
+    }
+};
+
+node ConstantTable {
+    children {
+        ConstantEntry entry { constructor},
+        ConstantTable next { constructor }
+    }
+};
+
+node ConstantEntry {
+    attributes {
+        Expr val {constructor},
+        int index {constructor}
+    }
+};
+
+node AssemblyList {
+    children {
+        Assembly assembly { constructor},
+        AssemblyList next { constructor }
+    }
+};
+
+node Assembly {
+    attributes {
+        string instruction {constructor},
+        string operands {constructor},
+        string comment
     }
 };
