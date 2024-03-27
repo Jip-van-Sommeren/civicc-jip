@@ -197,6 +197,24 @@ void appendAssignStmt(node_st **assignStmts, node_st **assignStmtsTail, node_st 
     }
 }
 
+void appendSymbolTableAndUpdateTail(node_st **symbolTable, node_st **symbolTableTail, node_st *newEntry)
+{
+    // Check if the list is empty
+    if (*symbolTable == NULL)
+    {
+        // This is the first expression in the list.
+        *symbolTable = ASTsymboltable(newEntry, NULL);
+        *symbolTableTail = *symbolTable; // The tail is the first node itself.
+    }
+    else
+    {
+        // There are already expressions in the list. Append the new expression.
+        node_st *newSymbolTableNode = ASTsymboltable(newEntry, NULL);
+        EXPRS_NEXT(*symbolTableTail) = newSymbolTableNode; // Append new expression to the end.
+        *symbolTableTail = newSymbolTableNode;             // Update the tail to the new node.
+    }
+}
+
 node_st *createNestedForLoops(node_st **dimsExpr, char **names, int dimsCount, node_st *assignStmt)
 {
     node_st *innerMostStmt = ASTstmts(assignStmt, NULL); // The innermost statement, initially just the assignment

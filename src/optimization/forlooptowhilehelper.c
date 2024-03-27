@@ -17,12 +17,13 @@ void insertNewShit(node_st **head, node_st **varDeclHead, node_st *node)
 {
     node_st *forNode = node;
     // if its a newly declared var in the loop we also need to make new vardecl, its not new obviously not needed/+.
-    if (FOR_NEWVAR(forNode))
+    if (FOR_NEWVAR(node))
     {
         node_st *vardecl = ASTvardecl(NULL, NULL, strdup(FOR_VAR(forNode)), CT_int);
         node_st *tempVardecls = ASTvardecls(vardecl, NULL);
         insertVarDecl(varDeclHead, tempVardecls, NULL);
     }
+
     node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(forNode)));
     VARLET_TYPE(varlet) = CT_int;
     node_st *newAssign = ASTassign(varlet, CCNcopy(FOR_START_EXPR(forNode)));

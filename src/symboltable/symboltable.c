@@ -334,18 +334,22 @@ node_st *STfor(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NT_VAR;
     // check if initializer
-    node_st *entry = findLink(data, identifier);
     char str[10];
-    sprintf(str, "for_%s_%d", identifier, forCounter);
     if (findLink(data, str) != NULL)
     {
         forCounter++;
         sprintf(str, "for_%s_%d", identifier, forCounter);
     }
+    if (newVar)
+    {
+        sprintf(str, "for_%s_%d", identifier, forCounter);
+        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL);
+        MEMfree(FOR_VAR(node));
+        FOR_VAR(node) = strdup(str);
+    }
+
     // set new name as var name
-    insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL);
-    MEMfree(FOR_VAR(node));
-    FOR_VAR(node) = strdup(str);
+
     // sert the function symbol into the symbol table with the current scope level
     //  Increment the scope level for the function body
     inForLoop = true;
@@ -458,7 +462,6 @@ node_st *STvar(node_st *node)
     char *name = VAR_NAME(node);
 
     node_st *entry = findLink(data, name);
-    ;
     if (entry == NULL && inForLoop)
     {
         char str2[10];

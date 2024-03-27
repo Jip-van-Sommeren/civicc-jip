@@ -86,7 +86,6 @@ node_st *CONSTTprogram(node_st *node)
 {
     struct data_constt *data = DATA_CONSTT_GET();
     TRAVchildren(node);
-    printf("here1\n");
     node_st *constantTable = makeConstantTable(data);
     PROGRAM_CONSTANTTABLE(node) = constantTable;
     return node;

@@ -283,7 +283,6 @@ void processStatementNode(node_st *node, LoopInfo *loopInfo)
         if (localLoopInfo.depth > 1)
         { // Ensure there is at least one loop surrounding this assignment
             int dimsCountVarlet = checkExprDimension(VARLET_INDICES(ASSIGN_LET(node)));
-            printf("NODE TYPE = %d\n", NODE_TYPE(ASSIGN_EXPR(node)));
             int dimsCountVar = 0;
             if (NODE_TYPE(ASSIGN_EXPR(node)) == NT_VAR)
             {

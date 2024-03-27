@@ -21,7 +21,13 @@
 node_st *PRTprogram(node_st *node)
 {
     printf("Program:\n");
-    TRAVdo(PROGRAM_SYMBOLTABLE(node));
+    if (PROGRAM_SYMBOLTABLE(node) != NULL)
+    {
+        printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
+        printf("-------------------------------------------------------------\n");
+        TRAVopt(PROGRAM_SYMBOLTABLE(node));
+        printf("-------------------------------------------------------------\n");
+    }
     TRAVdo(PROGRAM_DECLS(node));
     if (PROGRAM_CONSTANTTABLE(node) != NULL)
     {
@@ -172,10 +178,13 @@ node_st *PRTfundef(node_st *node)
     printf(")\n{\n");
     TRAVopt(FUNDEF_BODY(node));
     printf("}\n");
-    printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
-    printf("-------------------------------------------------------------\n");
-    TRAVopt(FUNDEF_SYMBOLTABLE(node));
-    printf("-------------------------------------------------------------\n");
+    if (FUNDEF_SYMBOLTABLE(node) != NULL)
+    {
+        printf("%-20s %-15s %-10s %-10s\n", "Name", "Type", "Scope", "Line No");
+        printf("-------------------------------------------------------------\n");
+        TRAVopt(FUNDEF_SYMBOLTABLE(node));
+        printf("-------------------------------------------------------------\n");
+    }
     return node;
 }
 

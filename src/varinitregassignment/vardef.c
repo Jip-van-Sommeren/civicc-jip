@@ -33,6 +33,7 @@ node_st *VDRAprogram(node_st *node)
     node_st *assignStmtsTail = NULL; // Tail of the list.
 
     node_st *decls = PROGRAM_DECLS(node);
+
     while (decls != NULL)
     {
         if (NODE_TYPE(DECLS_DECL(decls)) == NT_GLOBDEF)
@@ -44,9 +45,7 @@ node_st *VDRAprogram(node_st *node)
                 // Create an assignment statement for the global variable initialization.
                 node_st *var = ASTvarlet(NULL, strdup(GLOBDEF_NAME(globDef)));
                 node_st *assign = ASTassign(var, CCNcopy(GLOBDEF_INIT(globDef)));
-
                 // Append the assignment to the list.
-
                 appendAssignStmt(&assignStmts, &assignStmtsTail, assign);
                 CCNfree(GLOBDEF_INIT(DECLS_DECL(decls)));
                 GLOBDEF_INIT(DECLS_DECL(decls)) = NULL;
