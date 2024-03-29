@@ -294,6 +294,7 @@ var: ID
    { $$ = ASTvar($3, $1); AddLocToNode($$, &@1, &@$);}
    ;
 
+
 expr: expr PLUS expr
    { $$ = ASTbinop($1, $3, BO_add); AddLocToNode($$, &@1, &@$);}
     | expr MINUS expr

@@ -283,6 +283,49 @@ void insertVarDecl(node_st **head, node_st *newVardeclsNode, node_st *prevVardec
     }
 }
 
+int insertVarDeclAtEndAndReturnCount(node_st **head, node_st *newVardeclsNode)
+{
+    int count = 0;
+    if (*head == NULL)
+    {
+        // The list is empty, so newVardeclsNode becomes the head
+        *head = newVardeclsNode;
+    }
+    else
+    {
+        // Traverse the list to find the last node
+        node_st *current = *head;
+        while (VARDECLS_NEXT(current) != NULL)
+        {
+            count++;
+            current = VARDECLS_NEXT(current);
+        }
+        // Insert newVardeclsNode at the end of the list
+        VARDECLS_NEXT(current) = newVardeclsNode;
+    }
+    return count;
+}
+
+void insertVarDeclAtEnd(node_st **head, node_st *newVardeclsNode)
+{
+    if (*head == NULL)
+    {
+        // The list is empty, so newVardeclsNode becomes the head
+        *head = newVardeclsNode;
+    }
+    else
+    {
+        // Traverse the list to find the last node
+        node_st *current = *head;
+        while (VARDECLS_NEXT(current) != NULL)
+        {
+            current = VARDECLS_NEXT(current);
+        }
+        // Insert newVardeclsNode at the end of the list
+        VARDECLS_NEXT(current) = newVardeclsNode;
+    }
+}
+
 void insertStmts(node_st **head, node_st *newStmtsNode, node_st *prevStmtsNode)
 {
     if (prevStmtsNode == NULL)

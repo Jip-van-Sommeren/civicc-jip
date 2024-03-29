@@ -93,10 +93,11 @@ node_st *APfuncall(node_st *node)
     {
         return node;
     }
+    int inputCount = 0;
     while (exprsNode != NULL)
     {
         node_st *expr = EXPRS_EXPR(exprsNode);
-
+        inputCount++;
         // Check if the current parameter is an array with dimensions
         if (NODE_TYPE(expr) == NT_VAR && SYMBOLENTRY_DIMS(VAR_SYMBOLENTRY(expr)) != NULL)
         {
@@ -105,6 +106,7 @@ node_st *APfuncall(node_st *node)
 
             while (exprs != NULL)
             {
+                inputCount++;
                 //     // For each dimension, create a new parameter
                 node_st *expr = EXPRS_EXPR(exprs);
                 node_st *new_expr = NULL;
@@ -118,7 +120,7 @@ node_st *APfuncall(node_st *node)
                 }
                 else
                 {
-                    printf("invalid type\n");
+                    fprintf(stderr, "invalid type\n");
                 }
 
                 //     // Create a new Params node for the new parameter
@@ -153,6 +155,7 @@ node_st *APfuncall(node_st *node)
         // Move to the next Params node in the list
         exprsNode = EXPRS_NEXT(exprsNode);
     }
+    FUNCALL_INPUTCOUNT(node) = inputCount;
     TRAVchildren(node);
     return node;
 }

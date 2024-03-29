@@ -12,6 +12,7 @@
 #include "palm/ctinfo.h"
 #include "varinitregassignment/vardefhelper.h"
 #include "arrayparam/arrayhelpers.h"
+#include "makeassemblyhelper.h"
 
 #define TABLESIZE 128
 
@@ -32,7 +33,8 @@ static bool floatEqual(void *ptr1, void *ptr2)
 void CONSTTinit()
 {
     struct data_constt *data = DATA_CONSTT_GET();
-    data->constTable = HTnew_Int(TABLESIZE);
+    data->intTable = HTnew_Int(TABLESIZE);
+    data->floatTable = HTnew(TABLESIZE, floatHash, floatEqual);
     data->index = 0;
     return;
 }
@@ -40,54 +42,57 @@ void CONSTTinit()
 void CONSTTfini()
 {
     struct data_constt *data = DATA_CONSTT_GET();
-    htable_iter_st *iter = HTiterate(data->constTable);
-    while (iter != NULL)
+    htable_iter_st *iterInt = HTiterate(data->intTable);
+    htable_iter_st *iterFloat = HTiterate(data->floatTable);
+    while (iterInt != NULL)
     {
-        int *key = HTiterKey(iter);
+        int *key = HTiterKey(iterInt);
         free(key);
 
-        iter = HTiterateNext(iter);
+        iterInt = HTiterateNext(iterInt);
     }
+    while (iterFloat != NULL)
+    {
+        int *key = HTiterKey(iterFloat);
+        free(key);
 
-    HTdelete(data->constTable);
+        iterFloat = HTiterateNext(iterFloat);
+    }
+    HTdelete(data->floatTable);
+    HTdelete(data->intTable);
     return;
 }
 
-node_st *makeConstantTable(struct data_constt *data)
+void makeConstantTable(node_st **head, node_st **tail, struct data_constt *data)
 {
-    htable_iter_st *iter = HTiterate(data->constTable);
-    node_st *constantTable = NULL;
-    node_st *constantTableTail = NULL;
+    htable_iter_st *iterInt = HTiterate(data->intTable);
+    htable_iter_st *iterFloat = HTiterate(data->floatTable);
 
-    while (iter != NULL)
+    while (iterInt != NULL)
     {
 
-        node_st *entry = HTiterValue(iter);
+        node_st *entry = HTiterValue(iterInt);
 
-        if (constantTable == NULL)
-        {
-            // This is the first assignment statement.
-            constantTable = ASTconstanttable(entry, NULL);
-            constantTableTail = constantTable; // The tail is the same as head now.
-        }
-        else
-        {
-            // Append to the tail and update the tail pointer.
-            node_st *newSymboltable = ASTconstanttable(entry, NULL);
-            CONSTANTTABLE_NEXT(constantTableTail) = newSymboltable; // Append to the end.
-            constantTableTail = newSymboltable;                     // Update the tail.
-        }
-        iter = HTiterateNext(iter);
+        appendConstantTableAndUpdateTail(head, tail, entry);
+        iterInt = HTiterateNext(iterInt);
     }
-    return constantTable;
+    while (iterFloat != NULL)
+    {
+
+        node_st *entry = HTiterValue(iterFloat);
+        appendConstantTableAndUpdateTail(head, tail, entry);
+        iterFloat = HTiterateNext(iterFloat);
+    }
+
+    return;
 }
 
 node_st *CONSTTprogram(node_st *node)
 {
     struct data_constt *data = DATA_CONSTT_GET();
     TRAVchildren(node);
-    node_st *constantTable = makeConstantTable(data);
-    PROGRAM_CONSTANTTABLE(node) = constantTable;
+    node_st *tail = NULL;
+    makeConstantTable(&PROGRAM_CONSTANTTABLE(node), &tail, data);
     return node;
 }
 
@@ -105,21 +110,23 @@ node_st *CONSTTnum(node_st *node)
         return node;
     }
     // printf("key %d\n", data->index);
-    *key = data->index;
+    *key = val;
     // Use the allocated key for lookup
-    node_st *entry = HTlookup(data->constTable, key);
+    node_st *entry = HTlookup(data->intTable, key);
 
     if (val != 0 && val != 1 && val != -1 && entry == NULL)
     {
         // Insert using the allocated key. Assuming `node` is correctly typed to be stored as a value.
+        printf("%d %d\n", NUM_VAL(node), data->index);
         node_st *constantentry = ASTconstantentry(node, data->index);
-        HTinsert(data->constTable, key, constantentry);
+        HTinsert(data->intTable, key, constantentry);
         data->index++;
         NUM_LINK(node) = constantentry;
     }
     else
     {
         // If the key already exists or val is one of the excluded values, free the allocated key since it won't be used
+        NUM_LINK(node) = entry;
         free(key);
     }
     TRAVchildren(node);
@@ -137,20 +144,21 @@ node_st *CONSTTfloat(node_st *node)
         fprintf(stderr, "Memory allocation failed for hashtable key\n");
         return node;
     }
-    *key = data->index;
+    *key = val;
     // Use the allocated key for lookup
-    node_st *entry = HTlookup(data->constTable, key);
+    node_st *entry = HTlookup(data->floatTable, key);
     if (val != 0.0f && val != 1.0f && entry == NULL)
     {
         // Insert using the allocated key. Assuming `node` is correctly typed to be stored as a value.
         node_st *constantentry = ASTconstantentry(node, data->index);
-        HTinsert(data->constTable, key, constantentry);
+        HTinsert(data->floatTable, key, constantentry);
         data->index++;
         FLOAT_LINK(node) = constantentry;
     }
     else
     {
         // If the key already exists or val is 0.0 or 1.0, free the allocated key since it won't be used
+        FLOAT_LINK(node) = entry;
         free(key);
     }
 

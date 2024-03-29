@@ -619,12 +619,23 @@ node_st *PRTconstanttable(node_st *node)
 
 node_st *PRTassembly(node_st *node)
 {
-
+    printf("%s%s", ASSEMBLY_INSTRUCTION(node), ASSEMBLY_OPERANDS(node));
     return node;
 }
 
 node_st *PRTassemblylist(node_st *node)
 {
+    TRAVdo(ASSEMBLYLIST_ASSEMBLY(node));
 
+    // If there is another expression in the list, print a comma and continue printing
+
+    node_st *assemblylist = ASSEMBLYLIST_NEXT(node);
+
+    while (assemblylist != NULL)
+    {
+        TRAVdo(ASSIGN_ASSEMBLY(assemblylist));
+        // Move to the next set of declessions
+        assemblylist = ASSEMBLYLIST_NEXT(assemblylist);
+    }
     return node;
 }

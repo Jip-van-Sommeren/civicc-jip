@@ -21,6 +21,8 @@ void BCfini()
 {
     return;
 }
+
+static int count = 0;
 node_st *BCcast(node_st *node)
 {
     // Check if we are casting from boolean to int
@@ -41,7 +43,9 @@ node_st *BCcast(node_st *node)
         // Since the original cast node is being replaced, you might need to free its memory
         MEMfree(node->data.N_cast);
         MEMfree(node);
-
+        TERN_COUNT(newTern) = count;
+        count += 2;
+        TRAVchildren(newTern);
         return newTern;
     }
     if (CAST_TYPE(node) == CT_float && getType(CAST_EXPR(node)) == CT_bool)
@@ -61,7 +65,9 @@ node_st *BCcast(node_st *node)
         // Since the original cast node is being replaced, you might need to free its memory
         MEMfree(node->data.N_cast);
         MEMfree(node);
-
+        TERN_COUNT(newTern) = count;
+        count += 2;
+        TRAVchildren(newTern);
         return newTern;
     }
     if (CAST_TYPE(node) == CT_bool && getType(CAST_EXPR(node)) == CT_int)
@@ -81,7 +87,9 @@ node_st *BCcast(node_st *node)
         // Since the original cast node is being replaced, you might need to free its memory
         MEMfree(node->data.N_cast);
         MEMfree(node);
-
+        TERN_COUNT(newTern) = count;
+        count += 2;
+        TRAVchildren(newTern);
         return newTern;
     }
     if (CAST_TYPE(node) == CT_bool && getType(CAST_EXPR(node)) == CT_float)
@@ -101,7 +109,9 @@ node_st *BCcast(node_st *node)
         // Since the original cast node is being replaced, you might need to free its memory
         MEMfree(node->data.N_cast);
         MEMfree(node);
-
+        TERN_COUNT(newTern) = count;
+        count += 2;
+        TRAVchildren(newTern);
         return newTern;
     }
 

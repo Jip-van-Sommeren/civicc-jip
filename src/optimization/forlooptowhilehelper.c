@@ -16,17 +16,21 @@
 void insertNewShit(node_st **head, node_st **varDeclHead, node_st *node)
 {
     node_st *forNode = node;
+    int count = 0;
     // if its a newly declared var in the loop we also need to make new vardecl, its not new obviously not needed/+.
     if (FOR_NEWVAR(node))
     {
         node_st *vardecl = ASTvardecl(NULL, NULL, strdup(FOR_VAR(forNode)), CT_int);
         node_st *tempVardecls = ASTvardecls(vardecl, NULL);
-        insertVarDecl(varDeclHead, tempVardecls, NULL);
+        count = insertVarDeclAtEndAndReturnCount(varDeclHead, tempVardecls);
     }
 
     node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(forNode)));
+    VARLET_SYMBOLENTRY(varlet) = ASTsymbolentry(NULL, strdup(FOR_VAR(forNode)), CT_int, NODE_BLINE(node), -1, NT_VARLET, 0, NULL);
+    SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(varlet)) = count;
     VARLET_TYPE(varlet) = CT_int;
     node_st *newAssign = ASTassign(varlet, CCNcopy(FOR_START_EXPR(forNode)));
+    ASSIGN_UPDATE(newAssign) = true;
     node_st *tmpStmts = ASTstmts(newAssign, NULL);
     insertStmts(head, tmpStmts, NULL);
 }

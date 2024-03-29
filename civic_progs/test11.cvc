@@ -1,0 +1,19 @@
+export int main(){
+    int x = 1;
+    
+    float a =2.2;
+   
+    void foo()
+    {
+        return;
+    }
+     x = x + 1;
+    foo();
+    baz(a);
+    main();
+    return 0;
+}
+
+float baz(float c){
+    return 0.0;
+}

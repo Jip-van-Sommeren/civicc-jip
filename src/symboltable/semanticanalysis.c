@@ -259,7 +259,6 @@ node_st *SAglobdef(node_st *node)
     {
 
         int num = NUM_VAL(init);
-        printf("%d\n", num);
         checkIntegerRange(num);
     }
     if (dims == NULL && init != NULL && (GLOBDEF_TYPE(node) != getType(init)))
@@ -414,6 +413,10 @@ node_st *SAassign(node_st *node)
     if (NODE_TYPE(expr) == NT_FUNCALL && strcmp(FUNCALL_NAME(expr), "__allocate") == 0)
     {
         return node;
+    }
+    if (NODE_TYPE(expr) == NT_BINOP && NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR && strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM)
+    {
+        ASSIGN_UPDATE(node) = true;
     }
     if (getType(expr) != getType(varlet))
     {

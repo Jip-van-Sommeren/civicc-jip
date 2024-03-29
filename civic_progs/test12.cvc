@@ -1,0 +1,7 @@
+extern int scanInt();
+
+export int main(){
+    int i = scanInt();
+    main();
+    return 0;
+}

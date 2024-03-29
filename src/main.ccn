@@ -96,13 +96,32 @@ phase CodeGen {
             uid = CONSTT,
             nodes = {Program, Num, Float},
             travdata {
-                user htable_stptr constTable,
+                user htable_stptr intTable,
+                user htable_stptr floatTable,
                 int index
             }
         };
-        traversal MakeAssembly {
+        traversal MakeAssemblyFirst {
+            uid = MAF,
+            nodes = Expr 
+
+        };
+        traversal MakeAssemblySecond {
+            uid = MAS,
+            nodes = Stmt
+        };
+        traversal MakeAssemblyCombine{
+            uid = MAC,
+            nodes = {Program}
+        };
+        traversal MakeAssemblyThird {
+            uid = MAT,
+            nodes = Expr | Stmt
+
+        };
+        traversal MakeAssemblyFinal {
             uid = MA,
-            nodes = {Program, FunDef}
+            nodes = {Program}
 
         };
     }
@@ -154,9 +173,19 @@ nodeset Decl = {GlobDef, GlobDecl, FunDef};
 
 nodeset Vars = {VarDecl, Var, VarLet};
 
-nodeset Expr = {Cast, FunCall, Var, ArrExpr, Tern} | (Constants | Operations);
+nodeset Expr {
+    nodes = {Cast, FunCall, Var, ArrExpr, Tern} | (Constants | Operations),
+    attributes {
+        AssemblyList assembly
+    }
+};
 
-nodeset Stmt = {Assign, ExprStmt, IfElse, While, DoWhile, For, Return};
+nodeset Stmt {
+    nodes = {Assign, ExprStmt, IfElse, While, DoWhile, For, Return},
+    attributes {
+        AssemblyList assembly
+    }
+};
 
 nodeset Named {
     nodes = Vars | (Decl | {FunCall, Param, Ids}),
@@ -181,7 +210,8 @@ nodeset Link {
 nodeset Linked {
     nodes = {FunCall, Var, VarLet},
     attributes {
-        SymbolEntry symbolEntry
+        SymbolEntry symbolEntry,
+        int Index
     }
 };
 
@@ -196,7 +226,11 @@ root node Program {
         SymbolTable symbolTable,
         Decls decls { constructor, mandatory },
         ConstantTable constantTable,
-        AssemblyList assemblyList
+        AssemblyList assemblyList,
+        AssemblyList constant,
+        AssemblyList import,
+        AssemblyList export,
+        AssemblyList global
     }
 };
 
@@ -249,7 +283,8 @@ node FunCall {
     },
 
     attributes {
-        string name { constructor }
+        string name { constructor },
+        int inputCount 
     }
 };
 
@@ -271,6 +306,7 @@ node FunDef {
         FunBody body { constructor },
         Params params { constructor },
         AssemblyList assemblyList
+        
     },
     attributes {
         string name { constructor },
@@ -419,7 +455,10 @@ node SymbolEntry {
         int declaredAtLine { constructor },
         int scopeLevel { constructor },
         int nodetype { constructor },
-        int dimsCount {constructor}
+        int dimsCount {constructor},
+        string scopeName {constructor},
+        int index, 
+        bool externB
     }
 };
 
@@ -427,13 +466,19 @@ node Assign {
     children {
         VarLet let { constructor },
         Expr expr { constructor, mandatory }
+    },
+    attributes {
+        bool update
     }
 };
+
+
 
 node Binop {
     children {
         Expr left { constructor, mandatory },
         Expr right { constructor, mandatory }
+
     },
 
     attributes {
@@ -481,6 +526,9 @@ node Tern {
         Expr cond {constructor},
         Expr then_expr {constructor},
         Expr else_expr {constructor}
+    },
+    attributes {
+        int count
     }
 };
 

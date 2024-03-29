@@ -188,13 +188,13 @@ node_st *extractLoopStopExpr(node_st *node)
         stopExpr = FOR_STOP(node);
         break;
     case NT_WHILE:
-        if (NODE_TYPE(DOWHILE_COND(node)) == NT_BOOL)
+        if (NODE_TYPE(WHILE_COND(node)) == NT_BOOL)
         {
             stopExpr = WHILE_BLOCK(node);
         }
         else
         {
-            stopExpr = BINOP_RIGHT(DOWHILE_COND(node));
+            stopExpr = BINOP_RIGHT(WHILE_COND(node));
         }
         break;
     case NT_DOWHILE:
