@@ -8,5 +8,7 @@ char *getBinOpOpAssembly(enum BinOpType op, enum Type type);
 char *getMonOpOpAssembly(enum MonOpType op, enum Type type);
 void generateAssemblyForExpr(node_st **head, node_st **tail, node_st *expr);
 void generateAssemblyForStmt(node_st **head, node_st **tail, node_st *stmt);
+void generateAssemblyForFundef(node_st **head, node_st **tail, node_st *node);
 void insertAssembly(node_st **head, node_st *exprAssembly, node_st *varletAsm);
 node_st *returnExprAssembly(node_st *expr);
+void setToOutputFile(node_st *node);

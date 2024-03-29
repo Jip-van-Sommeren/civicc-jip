@@ -28,13 +28,13 @@ node_st *returnConstAssembly(node_st *val)
     {
     case NT_NUM:
 
-        sprintf(str, "%d\n", NUM_VAL(val));
+        sprintf(str, "%d", NUM_VAL(val));
         assemblyEntry = ASTassembly(strdup(".const int "), strdup(str));
         free(str);
         break;
     case NT_FLOAT:
 
-        sprintf(str, "%f\n", FLOAT_VAL(val));
+        sprintf(str, "%f", FLOAT_VAL(val));
         assemblyEntry = ASTassembly(strdup(".const float "), strdup(str));
         free(str);
         break;
@@ -54,20 +54,20 @@ node_st *assemblyEntry(node_st *decl)
     switch (NODE_TYPE(decl))
     {
     case NT_GLOBDECL:
-        sprintf(str, "\"%s\" %s\n", GLOBDECL_NAME(decl), VarTypeToString(GLOBDECL_TYPE(decl)));
+        sprintf(str, "\"%s\" %s", GLOBDECL_NAME(decl), VarTypeToString(GLOBDECL_TYPE(decl)));
         assemblyEntry = ASTassembly(strdup(".importfun "), strdup(str));
 
         free(str);
         break;
     case NT_GLOBDEF:
-        sprintf(str, "%s\n", VarTypeToString(GLOBDEF_TYPE(decl)));
+        sprintf(str, "%s", VarTypeToString(GLOBDEF_TYPE(decl)));
         assemblyEntry = ASTassembly(strdup(".global "), strdup(str));
         free(str);
         break;
     case NT_FUNDEF:
         if (FUNDEF_EXPORT(decl))
         {
-            sprintf(str, "\"%s\" %s %s\n", FUNDEF_NAME(decl), VarTypeToString(FUNDEF_TYPE(decl)), FUNDEF_NAME(decl));
+            sprintf(str, "\"%s\" %s %s", FUNDEF_NAME(decl), VarTypeToString(FUNDEF_TYPE(decl)), FUNDEF_NAME(decl));
             assemblyEntry = ASTassembly(strdup(".exportfun "), strdup(str));
         }
         free(str);
@@ -80,21 +80,8 @@ node_st *assemblyEntry(node_st *decl)
     return assemblyEntry;
 }
 
-void setToOutputFile(node_st *node)
-{
-    while (node != NULL)
-    {
-        node_st *assemblyEntry = ASSEMBLYLIST_ASSEMBLY(node);
-        printf("%s\n", ASSEMBLY_INSTRUCTION(assemblyEntry));
-        printf("%s", ASSEMBLY_OPERANDS(assemblyEntry));
-        fprintf(global.outputFile, "%s%s", ASSEMBLY_INSTRUCTION(assemblyEntry), ASSEMBLY_OPERANDS(assemblyEntry));
-        node = ASSEMBLYLIST_NEXT(node);
-    }
-}
-
 node_st *MAprogram(node_st *node)
 {
-    openGlobalOutputFile();
     node_st *importsTail = NULL;
     node_st *globalsTail = NULL;
     node_st *exportTail = NULL;
@@ -122,7 +109,7 @@ node_st *MAprogram(node_st *node)
         {
             appendAssemblyListAndUpdateTail(&PROGRAM_GLOBAL(node), &globalsTail, entry);
         }
-        else
+        else if (NODE_TYPE(decl) == NT_FUNDEF && FUNDEF_EXPORT(decl))
         {
             appendAssemblyListAndUpdateTail(&PROGRAM_EXPORT(node), &exportTail, entry);
         }

@@ -60,11 +60,14 @@ node_st *VDRAprogram(node_st *node)
     }
 
     // Create the __init function definition node with the assignments as its body.
-    node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);
-    node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, true);
-    // Assume there's a way t
+    if (assignStmts != NULL)
+    {
+        node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);
+        node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, true);
+        // Assume there's a way t
 
-    DECLS_NEXT(lastDecls) = ASTdecls(initFunDef, NULL);
+        DECLS_NEXT(lastDecls) = ASTdecls(initFunDef, NULL);
+    }
 
     return node; // Return the modified AST
 }

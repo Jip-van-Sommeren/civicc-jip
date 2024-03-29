@@ -199,7 +199,7 @@ void STinit()
     data->unresolvedFuncall = HTnew_String(TABLE_SIZE);
 
     // Automatically create the global scope with its own symbol table
-    ST_pushScopeLevel(data, 0, strdup("glob"));
+    ST_pushScopeLevel(data, 0, strdup(""));
 }
 
 /**
@@ -296,6 +296,31 @@ void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *
     return;
 }
 
+char *makeScopeName(struct data_st *data, char *name)
+{
+    char *str = malloc(256 * sizeof(char));
+    if (!str)
+        return NULL; // Allocation check
+
+    // Initialize the string to be empty
+    str[0] = '\0';
+
+    for (int i = 0; i < data->scopeStack->top + 1; ++i)
+    {
+        Scope *currentScope = &(data->scopeStack->scopes[i]);
+        // Append the current scope name with an underscore as needed
+        // Check if it's not the first scope name being appended to avoid leading underscores
+        if (data->scopeStack->top != 0 && i != 0)
+        {
+            strcat(str, "_");
+            strcat(str, currentScope->name);
+        }
+    }
+    strcat(str, "_");
+    strcat(str, name);
+
+    return str;
+}
 /**
  * @fn STfundef
  */
@@ -321,6 +346,10 @@ node_st *STfundef(node_st *node)
         index = fundefIndex;
         fundefIndex++;
     }
+    FUNDEF_INDEX(node) = index;
+    FUNDEF_SCOPENAME(node) = makeScopeName(data, identifier);
+
+    printf("scopename: %s\n", FUNDEF_SCOPENAME(node));
     if (unresolvedEntry != NULL)
     {
 
@@ -558,6 +587,7 @@ node_st *STfuncall(node_st *node)
 
         FUNCALL_TYPE(node) = SYMBOLENTRY_TYPE(entry);
         FUNCALL_INDEX(node) = SYMBOLENTRY_INDEX(entry);
+        FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
     }
     // Check if funcall is not already in unresolved calls, if not add to unresolved calls
     // else link the symbolentry node.
@@ -567,11 +597,13 @@ node_st *STfuncall(node_st *node)
         {
             node_st *entry = ASTsymbolentry(NULL, strdup(name), -1, -1, -1, -1, -1, NULL);
             FUNCALL_SYMBOLENTRY(node) = entry;
+            FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
             HTinsert(data->unresolvedFuncall, name, entry);
         }
         else
         {
             FUNCALL_SYMBOLENTRY(node) = HTlookup(data->unresolvedFuncall, name);
+            FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
         }
     }
 

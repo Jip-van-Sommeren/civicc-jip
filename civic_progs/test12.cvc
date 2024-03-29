@@ -1,7 +1,8 @@
-extern int scanInt();
-
 export int main(){
-    int i = scanInt();
+    int i = 2;
     main();
+    while (i < 5) {
+        i = i + 1;
+    }
     return 0;
 }

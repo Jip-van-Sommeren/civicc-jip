@@ -15,109 +15,22 @@
 #include "global/globals.h"
 #include "makeassemblyhelper.h"
 
-node_st *MATcast(node_st *node)
+node_st *MACprogram(node_st *node)
 {
+    openGlobalOutputFile();
     TRAVchildren(node);
-    CCNfree(CAST_ASSEMBLY(node));
-    return node;
-}
-node_st *MATfuncall(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(FUNCALL_ASSEMBLY(node));
-    return node;
-}
-node_st *MATvar(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(VAR_ASSEMBLY(node));
-    return node;
-}
-node_st *MATarrexpr(node_st *node)
-{
-    return node;
-}
-node_st *MATtern(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(TERN_ASSEMBLY(node));
     return node;
 }
 
-node_st *MATnum(node_st *node)
+node_st *MACfundef(node_st *node)
 {
-    TRAVchildren(node);
-    CCNfree(NUM_ASSEMBLY(node));
-    return node;
-}
-node_st *MATfloat(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(FLOAT_ASSEMBLY(node));
-    return node;
-}
 
-node_st *MATbool(node_st *node)
-{
+    node_st *AssemblylistTail = NULL;
+    generateAssemblyForFundef(&FUNDEF_ASSEMBLYLIST(node), &AssemblylistTail, node);
+    if (global.outputFile != NULL && FUNDEF_ASSEMBLYLIST(node) != NULL)
+    {
+        setToOutputFile(FUNDEF_ASSEMBLYLIST(node));
+    }
     TRAVchildren(node);
-    CCNfree(BOOL_ASSEMBLY(node));
-    return node;
-}
-node_st *MATbinop(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(BINOP_ASSEMBLY(node));
-
-    return node;
-}
-node_st *MATmonop(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(MONOP_ASSEMBLY(node));
-    return node;
-}
-
-node_st *MATassign(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(ASSIGN_ASSEMBLY(node));
-
-    return node;
-}
-node_st *MATexprstmt(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(EXPRSTMT_ASSEMBLY(node));
-    return node;
-}
-node_st *MATifelse(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(IFELSE_ASSEMBLY(node));
-    return node;
-}
-node_st *MATwhile(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(WHILE_ASSEMBLY(node));
-    return node;
-}
-node_st *MATdowhile(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(DOWHILE_ASSEMBLY(node));
-    return node;
-}
-
-node_st *MATfor(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(FOR_ASSEMBLY(node));
-    return node;
-}
-node_st *MATreturn(node_st *node)
-{
-    TRAVchildren(node);
-    CCNfree(RETURN_ASSEMBLY(node));
     return node;
 }

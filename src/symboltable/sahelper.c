@@ -68,12 +68,13 @@ enum Type getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type ri
     case BO_le:
     case BO_gt:
     case BO_ge:
-    case BO_eq:
         if (leftType == CT_int || leftType == CT_float)
         {
             return CT_bool;
         }
         break;
+    case BO_eq:
+
     case BO_ne:
         // Relational operators are valid for int and float, but always return a boolean
         if (leftType == CT_int || leftType == CT_float || leftType == CT_bool)

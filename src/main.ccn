@@ -112,7 +112,7 @@ phase CodeGen {
         };
         traversal MakeAssemblyCombine{
             uid = MAC,
-            nodes = {Program}
+            nodes = {Program, FunDef}
         };
         traversal MakeAssemblyThird {
             uid = MAT,
@@ -284,7 +284,8 @@ node FunCall {
 
     attributes {
         string name { constructor },
-        int inputCount 
+        int inputCount,
+        int scope
     }
 };
 
@@ -311,7 +312,9 @@ node FunDef {
     attributes {
         string name { constructor },
         Type type { constructor },
-        bool export { constructor }
+        bool export { constructor },
+        int index,
+        string scopename
     }
 };
 
