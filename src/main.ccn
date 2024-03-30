@@ -371,7 +371,8 @@ node GlobDecl {
 
     attributes {
         string name { constructor },
-        Type type { constructor }
+        Type type { constructor },
+        bool isVar {constructor}
     }
 };
 
@@ -384,7 +385,8 @@ node GlobDef {
     attributes {
         string name { constructor },
         Type type { constructor },
-        bool export {constructor}
+        bool export {constructor},
+        int index
     }
 };
 

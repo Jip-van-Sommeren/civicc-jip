@@ -283,6 +283,7 @@ node_st *SAbinop(node_st *node)
     enum Type typeRight = getType(right);
 
     enum Type resultType = getBinOpResultType(BINOP_OP(node), typeLeft, typeRight);
+    printf("node type here %d\n", BINOP_OP(node));
     if (resultType != CT_NULL)
     {
         BINOP_TYPE(node) = resultType;
@@ -410,12 +411,18 @@ node_st *SAassign(node_st *node)
     node_st *varlet = ASSIGN_LET(node);
 
     node_st *expr = ASSIGN_EXPR(node);
+    if (NODE_TYPE(expr) == NT_BINOP)
+    {
+        printf("node type: %d\n", BINOP_OP(expr));
+    }
+
     if (NODE_TYPE(expr) == NT_FUNCALL && strcmp(FUNCALL_NAME(expr), "__allocate") == 0)
     {
         return node;
     }
-    if (NODE_TYPE(expr) == NT_BINOP && NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR && strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM && (BINOP_OP(expr) = BO_sub || BINOP_OP(expr) == BO_add))
+    if (NODE_TYPE(expr) == NT_BINOP && NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR && strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM && (BINOP_OP(expr) == BO_sub || BINOP_OP(expr) == BO_add) && !SYMBOLENTRY_GLOBAL(VAR_SYMBOLENTRY(BINOP_LEFT(expr))))
     {
+
         ASSIGN_UPDATE(node) = true;
     }
     if (getType(expr) != getType(varlet))

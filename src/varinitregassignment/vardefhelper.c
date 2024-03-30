@@ -367,3 +367,23 @@ void insertStmts(node_st **head, node_st *newStmtsNode, node_st *prevStmtsNode)
         STMTS_NEXT(prevStmtsNode) = newStmtsNode;
     }
 }
+
+void insertStmtsAtEnd(node_st **head, node_st *newStmtsNode)
+{
+    if (*head == NULL)
+    {
+        // The list is empty, so newVardeclsNode becomes the head
+        *head = newStmtsNode;
+    }
+    else
+    {
+        // Traverse the list to find the last node
+        node_st *current = *head;
+        while (STMTS_NEXT(current) != NULL)
+        {
+            current = STMTS_NEXT(current);
+        }
+        // Insert newStmtsNode at the end of the list
+        STMTS_NEXT(current) = newStmtsNode;
+    }
+}

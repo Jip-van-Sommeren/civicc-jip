@@ -18,14 +18,13 @@ void insertNewShit(node_st **head, node_st **varDeclHead, node_st *node)
     node_st *forNode = node;
     int count = 0;
     // if its a newly declared var in the loop we also need to make new vardecl, its not new obviously not needed/+.
+
     if (FOR_NEWVAR(node))
     {
-        printf("here\n");
         node_st *vardecl = ASTvardecl(NULL, NULL, strdup(FOR_VAR(forNode)), CT_int);
         node_st *tempVardecls = ASTvardecls(vardecl, NULL);
         count = insertVarDeclAtEndAndReturnCount(varDeclHead, tempVardecls);
         FOR_VARINDEX(node) = count;
-        printf("for var index %d\n", FOR_VARINDEX(node));
     }
 
     node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(forNode)));
@@ -48,6 +47,7 @@ void processForLoop(node_st **head, node_st **varDeclHead, node_st *prev, node_s
         return;
 
     node_st *innerStmts = NULL;
+    node_st *prevInner = NULL;
     switch (NODE_TYPE(node))
     {
     case NT_IFELSE:
@@ -65,12 +65,21 @@ void processForLoop(node_st **head, node_st **varDeclHead, node_st *prev, node_s
         }
         break;
     case NT_WHILE:
+        innerStmts = returnStmtsBlock(node);
+        while (innerStmts != NULL)
+        {
+            processForLoop(&WHILE_BLOCK(node), varDeclHead, prevInner, STMTS_STMT(innerStmts));
+            prevInner = innerStmts;
+            innerStmts = STMTS_NEXT(innerStmts);
+        }
+        break;
     case NT_DOWHILE:
 
         innerStmts = returnStmtsBlock(node);
         while (innerStmts != NULL)
         {
-            processForLoop(head, varDeclHead, prev, STMTS_STMT(innerStmts));
+            processForLoop(&DOWHILE_BLOCK(node), varDeclHead, prevInner, STMTS_STMT(innerStmts));
+            prevInner = innerStmts;
             innerStmts = STMTS_NEXT(innerStmts);
         }
         break;
@@ -79,7 +88,8 @@ void processForLoop(node_st **head, node_st **varDeclHead, node_st *prev, node_s
         innerStmts = returnStmtsBlock(node);
         while (innerStmts != NULL)
         {
-            processForLoop(head, varDeclHead, prev, STMTS_STMT(innerStmts));
+            processForLoop(&FOR_BLOCK(node), varDeclHead, prevInner, STMTS_STMT(innerStmts));
+            prev = innerStmts;
             innerStmts = STMTS_NEXT(innerStmts);
         }
         break;

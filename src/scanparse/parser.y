@@ -164,11 +164,11 @@ globdef: EXPORT ctype ID SEMICOLON
        ;
 
 globdecl: EXTERN ctype SQUARE_BRACKET_L ids SQUARE_BRACKET_R ID SEMICOLON
-        { $$ = ASTglobdecl($4, NULL, $6, $2); AddLocToNode($$, &@1, &@$); }
+        { $$ = ASTglobdecl($4, NULL, $6, $2, true); AddLocToNode($$, &@1, &@$); }
         | EXTERN ctype ID SEMICOLON
-        { $$ = ASTglobdecl(NULL, NULL, $3, $2); AddLocToNode($$, &@1, &@$); }
+        { $$ = ASTglobdecl(NULL, NULL, $3, $2, true); AddLocToNode($$, &@1, &@$); }
         | EXTERN ctype ID BRACKET_L params BRACKET_R SEMICOLON
-        { $$ = ASTglobdecl(NULL, $5, $3, $2); AddLocToNode($$, &@1, &@$); }
+        { $$ = ASTglobdecl(NULL, $5, $3, $2, false); AddLocToNode($$, &@1, &@$); }
         ;
 
 stmts: %empty

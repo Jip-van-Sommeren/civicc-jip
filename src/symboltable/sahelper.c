@@ -147,6 +147,9 @@ enum Type getType(node_st *node)
         tmp = PARAM_TYPE(node);
         break;
     case NT_ARREXPR:
+    case NT_TERN:
+        tmp = CT_bool;
+        break;
     default:
         tmp = 0;
         break;

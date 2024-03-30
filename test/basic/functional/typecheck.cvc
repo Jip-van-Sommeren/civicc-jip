@@ -23,7 +23,6 @@ int fun()
     float x=2.0;
     //bool q = TRUE;  This is the original line, which has a typo
     bool q = true;
-
     d = (int)(a<b&&c>d);
     printInt(d);//0
     printNewlines(1);

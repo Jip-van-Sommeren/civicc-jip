@@ -39,9 +39,21 @@ void appendAssemblyListAndUpdateTail(node_st **assemblyList, node_st **assemblyL
     }
 }
 
-void appendConstantTable(node_st **constantTable, node_st *constantTableEntry)
+void appendConstantTable(node_st **constantTable, node_st **constantTableTail, node_st *constantTableEntry)
 {
-    *constantTable = ASTconstanttable(constantTableEntry, *constantTable);
+    if (*constantTable == NULL)
+    {
+        // This is the first fundefession in the list.
+        *constantTable = ASTconstanttable(constantTableEntry, NULL);
+        *constantTableTail = *constantTable; // The tail is the first node itself.
+    }
+    else
+    {
+        // There are already expressions in the list. Append the new expression.
+        node_st *constantTableEntryNode = ASTconstanttable(constantTableEntry, NULL);
+        CONSTANTTABLE_NEXT(*constantTableTail) = constantTableEntryNode; // Append new expression to the end.
+        *constantTableTail = constantTableEntryNode;                     // Update the tail to the new node.
+    }
 }
 
 node_st *returnTypeAssembly(node_st *expr)
@@ -110,11 +122,14 @@ node_st *returnVarAssembly(node_st *expr)
 {
     char *str = malloc(MAX_STRING_SIZE * sizeof(char)); // Allocate memory dynamically
     bool global = false;
+    bool externB = false;
+    int index = VAR_INDEX(expr);
     if (VAR_SYMBOLENTRY(expr) != NULL)
     {
+        externB = SYMBOLENTRY_EXTERNB(VAR_SYMBOLENTRY(expr));
         global = SYMBOLENTRY_GLOBAL(VAR_SYMBOLENTRY(expr));
+        index = SYMBOLENTRY_INDEX(VAR_SYMBOLENTRY(expr));
     }
-    printf("var%d %s\n", VAR_INDEX(expr), VAR_NAME(expr));
     node_st *assembly = NULL;
     if (!str)
         return NULL; // Check for allocation failure
@@ -122,12 +137,16 @@ node_st *returnVarAssembly(node_st *expr)
     switch (VAR_TYPE(expr))
     {
     case CT_int:
-        sprintf(str, "%d", VAR_INDEX(expr));
-        if (global)
+        sprintf(str, "%d", index);
+        if (externB)
+        {
+            assembly = ASTassembly(strdup("    iloade "), strdup(str));
+        }
+        else if (global)
         {
             assembly = ASTassembly(strdup("    iloadg "), strdup(str));
         }
-        else if (VAR_INDEX(expr) < 4)
+        else if (index < 4)
         {
             assembly = ASTassembly(strdup("    iload_"), strdup(str));
         }
@@ -137,12 +156,12 @@ node_st *returnVarAssembly(node_st *expr)
         }
         break;
     case CT_float:
-        sprintf(str, "%d", VAR_INDEX(expr));
+        sprintf(str, "%d", index);
         if (global)
         {
             assembly = ASTassembly(strdup("    floadg "), strdup(str));
         }
-        else if (VAR_INDEX(expr) < 4)
+        else if (index < 4)
         {
             assembly = ASTassembly(strdup("    fload_"), strdup(str));
         }
@@ -152,12 +171,12 @@ node_st *returnVarAssembly(node_st *expr)
         }
         break;
     case CT_bool:
-        sprintf(str, "%d", VAR_INDEX(expr));
+        sprintf(str, "%d", index);
         if (global)
         {
             assembly = ASTassembly(strdup("    bloadg "), strdup(str));
         }
-        else if (VAR_INDEX(expr) < 4)
+        else if (index < 4)
         {
             assembly = ASTassembly(strdup("    bload_"), strdup(str));
         }
@@ -219,51 +238,52 @@ node_st *returnVarletAssembly(node_st *expr)
 {
     bool global = false;
     enum Type type = VARLET_TYPE(expr);
+    int index = VARLET_INDEX(expr);
     if (VARLET_SYMBOLENTRY(expr) != NULL)
     {
         type = SYMBOLENTRY_TYPE(VARLET_SYMBOLENTRY(expr));
         global = SYMBOLENTRY_GLOBAL(VARLET_SYMBOLENTRY(expr));
+        index = SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(expr));
     }
     char *str = malloc(MAX_STRING_SIZE * sizeof(char)); // Allocate memory dynamically
     node_st *assembly = NULL;
     if (!str)
         return NULL; // Check for allocation failure
-    printf("varlet index %d\n", VARLET_INDEX(expr));
     switch (type)
     {
     case CT_int:
         if (global)
         {
-            sprintf(str, "%d", VARLET_INDEX(expr));
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    istoreg "), strdup(str));
         }
         else
         {
-            sprintf(str, "%d", VARLET_INDEX(expr));
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    istore "), strdup(str));
         }
         break;
     case CT_float:
         if (global)
         {
-            sprintf(str, "%d", VARLET_INDEX(expr));
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    fstoreg "), strdup(str));
         }
         else
         {
-            sprintf(str, "%d", VARLET_INDEX(expr));
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    fstore "), strdup(str));
         }
         break;
     case CT_bool:
         if (global)
         {
-            sprintf(str, "%d", VARLET_INDEX(expr));
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    bstoreg "), strdup(str));
         }
         else
         {
-            sprintf(str, "%d", VARLET_INDEX(expr));
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    bstore "), strdup(str));
         }
         break;
@@ -301,7 +321,16 @@ char *getBinOpOpAssembly(enum BinOpType op, enum Type type)
         }
         break;
     case BO_sub:
-        sprintf(str, type == CT_int ? "    isub" : "    fsub");
+        printf("here\n");
+        if (type == CT_int)
+        {
+            sprintf(str, "    isub");
+        }
+        else if (type == CT_float)
+        {
+            sprintf(str, "    fsub");
+        }
+
         break;
     case BO_mul:
         if (type == CT_int)
@@ -349,7 +378,6 @@ char *getBinOpOpAssembly(enum BinOpType op, enum Type type)
     case BO_ge:
         if (type == CT_int)
         {
-            printf("herrererer\n");
             sprintf(str, op == BO_lt   ? "    ilt"
                          : op == BO_le ? "    ile"
                          : op == BO_gt ? "    igt"
@@ -414,13 +442,10 @@ char *getBinOpOpAssembly(enum BinOpType op, enum Type type)
 
     return str;
 }
-node_st *leaveSubRoutine(enum Type type, bool externb)
+node_st *leaveSubRoutine(enum Type type)
 {
     node_st *leaveRoutine = NULL;
-    if (externb)
-    {
-        return leaveRoutine;
-    }
+
     switch (type)
     {
     case CT_int:
@@ -472,7 +497,6 @@ void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
     node_st *enterRoutine = NULL;
     node_st *funcallAsm = NULL;
     node_st *exprs = FUNCALL_FUN_ARGS(expr);
-    printf("index %d funcall: %s\n", SYMBOLENTRY_INDEX(symbolentry), FUNCALL_NAME(expr));
     if (SYMBOLENTRY_SCOPELEVEL(symbolentry) == 0 && SYMBOLENTRY_INDEX(symbolentry) > -1 && !SYMBOLENTRY_EXTERNB(symbolentry))
     {
         enterRoutine = ASTassembly(strdup("    isrg"), strdup(""));
@@ -499,9 +523,13 @@ void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
         funcallAsm = ASTassembly(strdup("    jsr"), strdup(str));
     }
 
-    node_st *leaveRoutine = leaveSubRoutine(SYMBOLENTRY_TYPE(symbolentry), SYMBOLENTRY_EXTERNB(symbolentry));
     free(str);
-
+    node_st *leaveRoutine = NULL;
+    if (pop)
+    {
+        leaveRoutine = leaveSubRoutine(SYMBOLENTRY_TYPE(symbolentry));
+        pop = false;
+    }
     appendAssemblyListAndUpdateTail(head, tail, enterRoutine);
     genAssemblyForFuncallArgs(head, tail, exprs);
     appendAssemblyListAndUpdateTail(head, tail, funcallAsm);
@@ -515,11 +543,17 @@ void generateCastAssembly(node_st **head, node_st **tail, node_st *expr)
 {
     generateAssemblyForExpr(head, tail, CAST_EXPR(expr));
     enum Type typeExpr = getType(CAST_EXPR(expr));
+    printf("type: %d\n", typeExpr);
     enum Type typeCast = CAST_TYPE(expr);
 
     node_st *cast = NULL;
     if (typeCast == typeExpr)
     {
+        return;
+    }
+    if (typeExpr != CT_int && typeExpr != CT_float)
+    {
+        // The type is neither int nor float
         return;
     }
     if (typeCast == CT_int)
@@ -587,13 +621,10 @@ void generateAssemblyForExpr(node_st **head, node_st **tail, node_st *expr)
     }
     case NT_BINOP:
     {
-        printf("here222222\n");
         generateAssemblyForExpr(head, tail, BINOP_LEFT(expr));
         generateAssemblyForExpr(head, tail, BINOP_RIGHT(expr));
         // Combine left and right lists
-        printf("binop type %d\n", BINOP_TYPE(expr));
         char *binopAssembly = getBinOpOpAssembly(BINOP_OP(expr), getType(BINOP_LEFT(expr)));
-        printf("binop asm %s\n", binopAssembly);
         node_st *binopNode = ASTassembly(strdup(binopAssembly), strdup(""));
         free(binopAssembly);
         appendAssemblyListAndUpdateTail(head, tail, binopNode);
@@ -700,7 +731,7 @@ void generateAssemblyForWhile(node_st **head, node_st **tail, node_st *whileStmt
     if (WHILE_COND(whileStmt))
     {
         generateAssemblyForExpr(head, tail, WHILE_COND(whileStmt));
-        appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("branch_f "), strdup(labelEnd)));
+        appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("    branch_f "), strdup(labelEnd)));
     }
 
     // Generate assembly for the loop's body
@@ -791,6 +822,7 @@ node_st *returnStepAssembly(enum BinOpType type, int step, int index)
     switch (type)
     {
     case BO_sub:
+
         if (step == 1)
         {
             sprintf(str, "%d %d", step, index);
@@ -830,6 +862,7 @@ void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *assignSt
 {
     if (ASSIGN_UPDATE(assignStmt))
     {
+        printf("herer %d\n", BINOP_OP(ASSIGN_EXPR(assignStmt)));
         int step = NUM_VAL(BINOP_RIGHT(ASSIGN_EXPR(assignStmt)));
         node_st *assembly = returnStepAssembly(BINOP_OP(ASSIGN_EXPR(assignStmt)), step, VARLET_INDEX(ASSIGN_LET(assignStmt)));
         appendAssemblyListAndUpdateTail(head, tail, assembly);
@@ -849,6 +882,8 @@ void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *assignSt
 
 void generateAssemblyForExprStmt(node_st **head, node_st **tail, node_st *exprStmt)
 {
+    pop = true;
+    printf("herer\n");
     generateAssemblyForExpr(head, tail, EXPRSTMT_EXPR(exprStmt));
 }
 

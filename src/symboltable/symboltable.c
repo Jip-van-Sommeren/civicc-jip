@@ -19,7 +19,8 @@ static bool inForLoop = false;
 static int forCounter = 0;
 static int vardeclIndex = 0;
 static int fundefIndex = 0;
-static int globdeclIndex = 0;
+static int globdeclIndexFun = 0;
+static int globdeclIndexVar = 0;
 static int globdefIndex = 0;
 /**
  * @fn reportDoubleDeclarationError
@@ -94,6 +95,33 @@ node_st *findLink(struct data_st *data, char *name)
             return entry;
         }
     }
+    return NULL;
+}
+
+node_st *findLink1D(struct data_st *data, char *name)
+{
+
+    node_st *entry = HTlookup(data->scopeStack->scopes[data->scopeStack->top].symbolTable, name);
+    if (entry != NULL)
+    {
+        return entry;
+    }
+
+    return NULL;
+}
+
+node_st *findGlobLink(struct data_st *data, char *name)
+{
+
+    for (int i = data->scopeStack->top - 1; i > -1; --i)
+    {
+        node_st *entry = HTlookup(data->scopeStack->scopes[i].symbolTable, name);
+        if (entry != NULL)
+        {
+            return entry;
+        }
+    }
+
     return NULL;
 }
 
@@ -418,7 +446,8 @@ node_st *STfor(node_st *node)
 
     if (newVar)
     {
-        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL, -1, false, false);
+        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL, vardeclIndex, false, false);
+        vardeclIndex++;
         MEMfree(FOR_VAR(node));
         FOR_VAR(node) = strdup(str);
     }
@@ -491,6 +520,18 @@ node_st *STglobdecl(node_st *node)
     int nodetype = NODE_TYPE(node);
     int dimsCount = checkParamDimension(GLOBDECL_DIMS(node));
     node_st *dims = NULL;
+
+    int globdeclIndex = 0;
+    if (GLOBDECL_ISVAR(node))
+    {
+        globdeclIndex = globdeclIndexVar;
+        globdeclIndexVar++;
+    }
+    else
+    {
+        globdeclIndex = globdeclIndexFun;
+        globdeclIndexFun++;
+    }
     if (GLOBDECL_DIMS(node) != NULL)
     {
         dims = idsToExprs(GLOBDECL_DIMS(node));
@@ -499,8 +540,8 @@ node_st *STglobdecl(node_st *node)
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
+
         insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, GLOBDECL_PARAMS(node), globdeclIndex, true, true);
-        globdeclIndex++;
     }
     TRAVchildren(node);
     return node;
@@ -521,6 +562,7 @@ node_st *STglobdef(node_st *node)
     int nodetype = NODE_TYPE(node);
     node_st *dims = NULL;
     node_st *unresolvedEntry = HTlookup(data->unresolvedFuncall, identifier);
+    GLOBDEF_INDEX(node) = globdefIndex;
 
     if (GLOBDEF_DIMS(node) != NULL)
     {
@@ -528,6 +570,8 @@ node_st *STglobdef(node_st *node)
         dims = exprsToExprs(GLOBDEF_DIMS(node));
     }
     int dimsCount = checkExprDimension(GLOBDEF_DIMS(node));
+
+    printf(" globdef index %d\n", globdefIndex);
     if (unresolvedEntry != NULL)
     {
 
@@ -537,8 +581,9 @@ node_st *STglobdef(node_st *node)
     {
         // Only insert the symbol if it was not already declared
         insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, globdefIndex, false, true);
-        globdefIndex++;
     }
+
+    globdefIndex++;
     TRAVchildren(node);
     return node;
 }
@@ -550,7 +595,7 @@ node_st *STvar(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VAR_NAME(node);
-
+    printf("vardecl index %d, %s var name line number %d, declared at line", vardeclIndex, VAR_NAME(node), NODE_BLINE(node));
     node_st *entry = findLink(data, name);
     if (entry == NULL && inForLoop)
     {
@@ -569,7 +614,16 @@ node_st *STvar(node_st *node)
     else if (entry != NULL)
     {
         entry = findLink(data, name);
+        if ((int)NODE_BLINE(node) <= SYMBOLENTRY_DECLAREDATLINE(entry))
+        {
+            entry = findGlobLink(data, name);
+            if (!entry)
+            {
+                undeclaredVar(name, NODE_BLINE(node));
+            }
+        }
         VAR_SYMBOLENTRY(node) = entry;
+        printf("%d\n", SYMBOLENTRY_DECLAREDATLINE(entry));
         VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
         VAR_INDEX(node) = SYMBOLENTRY_INDEX(entry);
     }

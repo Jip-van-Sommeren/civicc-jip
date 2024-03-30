@@ -1,7 +1,7 @@
 #include "ccngen/ast.h"
 
 void appendAssemblyListAndUpdateTail(node_st **assemblyList, node_st **assemblyListTail, node_st *assemblyEntry);
-void appendConstantTable(node_st **constantTable, node_st *constantTableEntry);
+void appendConstantTable(node_st **constantTable, node_st **constantTableTail, node_st *constantTableEntry);
 node_st *returnTypeAssembly(node_st *expr);
 node_st *returnVarletAssembly(node_st *expr);
 char *getBinOpOpAssembly(enum BinOpType op, enum Type type);

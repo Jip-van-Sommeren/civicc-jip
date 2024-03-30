@@ -15,7 +15,10 @@
 #include "makeassemblyhelper.h"
 
 #define TABLESIZE 128
-
+// use global consttable to make,
+// use ht for cheking if the node already exists
+node_st *constTab = NULL;
+node_st *tail = NULL;
 static size_t floatHash(void *val)
 {
     float *f = (float *)val;
@@ -63,35 +66,34 @@ void CONSTTfini()
     return;
 }
 
-void makeConstantTable(node_st **head, struct data_constt *data)
-{
-    htable_iter_st *iterInt = HTiterate(data->intTable);
-    htable_iter_st *iterFloat = HTiterate(data->floatTable);
+// void makeConstantTable(node_st **head, node_st **tail, struct data_constt *data)
+// {
+//     htable_iter_st *iterInt = HTiterate(data->intTable);
+//     htable_iter_st *iterFloat = HTiterate(data->floatTable);
 
-    while (iterInt != NULL)
-    {
+//     while (iterInt != NULL)
+//     {
 
-        node_st *entry = HTiterValue(iterInt);
+//         node_st *entry = HTiterValue(iterInt);
 
-        appendConstantTable(head, entry);
-        iterInt = HTiterateNext(iterInt);
-    }
-    while (iterFloat != NULL)
-    {
+//         appendConstantTable(head, tail, entry);
+//         iterInt = HTiterateNext(iterInt);
+//     }
+//     while (iterFloat != NULL)
+//     {
 
-        node_st *entry = HTiterValue(iterFloat);
-        appendConstantTable(head, entry);
-        iterFloat = HTiterateNext(iterFloat);
-    }
+//         node_st *entry = HTiterValue(iterFloat);
+//         appendConstantTable(head, tail, entry);
+//         iterFloat = HTiterateNext(iterFloat);
+//     }
 
-    return;
-}
+//     return;
+// }
 
 node_st *CONSTTprogram(node_st *node)
 {
-    struct data_constt *data = DATA_CONSTT_GET();
     TRAVchildren(node);
-    makeConstantTable(&PROGRAM_CONSTANTTABLE(node), data);
+    PROGRAM_CONSTANTTABLE(node) = constTab;
     return node;
 }
 
@@ -118,6 +120,7 @@ node_st *CONSTTnum(node_st *node)
         // Insert using the allocated key. Assuming `node` is correctly typed to be stored as a value.
         printf("%d %d\n", NUM_VAL(node), data->index);
         node_st *constantentry = ASTconstantentry(node, data->index);
+        appendConstantTable(&constTab, &tail, constantentry);
         HTinsert(data->intTable, key, constantentry);
         data->index++;
         NUM_LINK(node) = constantentry;
@@ -151,6 +154,7 @@ node_st *CONSTTfloat(node_st *node)
         // Insert using the allocated key. Assuming `node` is correctly typed to be stored as a value.
         node_st *constantentry = ASTconstantentry(node, data->index);
         HTinsert(data->floatTable, key, constantentry);
+        appendConstantTable(&constTab, &tail, constantentry);
         data->index++;
         FLOAT_LINK(node) = constantentry;
     }

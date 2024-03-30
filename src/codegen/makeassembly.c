@@ -55,19 +55,26 @@ node_st *assemblyEntry(node_st *decl)
     {
     case NT_GLOBDECL:
     {
-        node_st *params = GLOBDECL_PARAMS(decl);
-
-        sprintf(str, "\"%s\" %s", GLOBDECL_NAME(decl), VarTypeToString(GLOBDECL_TYPE(decl)));
-        while (params != NULL)
+        if (GLOBDECL_ISVAR(decl))
         {
-            node_st *param = PARAMS_PARAM(params);
-            strcat(str, " ");
-            strcat(str, VarTypeToString(PARAM_TYPE(param)));
-            params = PARAMS_NEXT(params);
+            sprintf(str, "\"%s\" %s", GLOBDECL_NAME(decl), VarTypeToString(GLOBDECL_TYPE(decl)));
+            assemblyEntry = ASTassembly(strdup(".importvar "), strdup(str));
         }
+        else
+        {
+            node_st *params = GLOBDECL_PARAMS(decl);
 
-        assemblyEntry = ASTassembly(strdup(".importfun "), strdup(str));
+            sprintf(str, "\"%s\" %s", GLOBDECL_NAME(decl), VarTypeToString(GLOBDECL_TYPE(decl)));
+            while (params != NULL)
+            {
+                node_st *param = PARAMS_PARAM(params);
+                strcat(str, " ");
+                strcat(str, VarTypeToString(PARAM_TYPE(param)));
+                params = PARAMS_NEXT(params);
+            }
 
+            assemblyEntry = ASTassembly(strdup(".importfun "), strdup(str));
+        }
         free(str);
         break;
     }
@@ -89,6 +96,18 @@ node_st *assemblyEntry(node_st *decl)
         free(str);
         break;
     }
+    return assemblyEntry;
+}
+
+node_st *assemblyExport(node_st *decl)
+{
+    node_st *assemblyEntry = NULL;
+    char *str = malloc(MAX_STRING_SIZE * sizeof(char));
+
+    sprintf(str, "\"%s\" %d", GLOBDEF_NAME(decl), GLOBDEF_INDEX(decl));
+    assemblyEntry = ASTassembly(strdup(".exportvar "), strdup(str));
+    free(str);
+
     return assemblyEntry;
 }
 
@@ -120,6 +139,11 @@ node_st *MAprogram(node_st *node)
         else if (NODE_TYPE(decl) == NT_GLOBDEF)
         {
             appendAssemblyListAndUpdateTail(&PROGRAM_GLOBAL(node), &globalsTail, entry);
+            if GLOBDEF_EXPORT (decl)
+            {
+                node_st *export = assemblyExport(decl);
+                appendAssemblyListAndUpdateTail(&PROGRAM_EXPORT(node), &exportTail, export);
+            }
         }
         else if (NODE_TYPE(decl) == NT_FUNDEF && FUNDEF_EXPORT(decl))
         {
