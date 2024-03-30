@@ -65,8 +65,7 @@ node_st *VDRAprogram(node_st *node)
         node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);
         node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, true);
         // Assume there's a way t
-
-        DECLS_NEXT(lastDecls) = ASTdecls(initFunDef, NULL);
+        insertDeclsAtStart(&PROGRAM_DECLS(node), ASTdecls(initFunDef, NULL));
     }
 
     return node; // Return the modified AST

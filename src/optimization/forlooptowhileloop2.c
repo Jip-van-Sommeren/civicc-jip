@@ -36,7 +36,9 @@ node_st *FTWTfor(node_st *node)
         step = ASTnum(1);
     }
     node_st *updateExpr = step;
-    node_st *condExpr = ASTbinop(ASTvar(NULL, strdup(FOR_VAR(node))), CCNcopy(FOR_STOP(node)), loopExtreme);
+    node_st *varCond = ASTvar(NULL, strdup(FOR_VAR(node)));
+    VAR_TYPE(varCond) = CT_int;
+    node_st *condExpr = ASTbinop(varCond, CCNcopy(FOR_STOP(node)), loopExtreme);
     node_st *bodyStmts = CCNcopy(FOR_BLOCK(node));
 
     // Transform for loop into while loop
@@ -45,8 +47,18 @@ node_st *FTWTfor(node_st *node)
     // If there's an update expression, it needs to be appended to the end of the while body
     if (updateExpr)
     {
-        node_st *binopUpdate = ASTbinop(ASTvar(NULL, strdup(FOR_VAR(node))), updateExpr, loopUpdater);
-        node_st *updateAssign = ASTassign(ASTvarlet(NULL, strdup(FOR_VAR(node))), binopUpdate);
+        node_st *var = ASTvar(NULL, strdup(FOR_VAR(node)));
+        VAR_TYPE(var) = CT_int;
+        VAR_INDEX(var) = FOR_VARINDEX(node);
+
+        printf("var index %d\n", VAR_INDEX(node));
+        node_st *binopUpdate = ASTbinop(var, updateExpr, loopUpdater);
+        BINOP_TYPE(binopUpdate) = CT_int;
+        node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(node)));
+        VARLET_TYPE(varlet) = CT_int;
+        VARLET_INDEX(varlet) = FOR_VARINDEX(node);
+        node_st *updateAssign = ASTassign(varlet, binopUpdate);
+        ASSIGN_UPDATE(updateAssign) = true;
         // Assuming you have a function to append statements to a block
         node_st *newStmtsNode = ASTstmts(updateAssign, NULL);
 

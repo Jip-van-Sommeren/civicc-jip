@@ -91,6 +91,12 @@ node_st *makeVarNode(node_st *expr, char *name)
     return entry;
 }
 
+void insertDeclsAtStart(node_st **head, node_st *node)
+{
+    DECLS_NEXT(node) = *head;
+    *head = node;
+}
+
 node_st *exprsToExprs(node_st *dims)
 {
     node_st *exprsHead = NULL;     // Head of the new exprs list
@@ -293,6 +299,7 @@ int insertVarDeclAtEndAndReturnCount(node_st **head, node_st *newVardeclsNode)
     }
     else
     {
+        count++;
         // Traverse the list to find the last node
         node_st *current = *head;
         while (VARDECLS_NEXT(current) != NULL)
@@ -303,6 +310,25 @@ int insertVarDeclAtEndAndReturnCount(node_st **head, node_st *newVardeclsNode)
         // Insert newVardeclsNode at the end of the list
         VARDECLS_NEXT(current) = newVardeclsNode;
     }
+    printf("count %d\n", count);
+    return count;
+}
+
+int vardeclCount(node_st **head, char *name)
+{
+    int count = 0;
+
+    node_st *current = *head;
+    while (current != NULL)
+    {
+        // if (strcmp(VARDECL_NAME(VARDECLS_VARDECL(current)), name) == 0)
+        // {
+        //     return count;
+        // }
+        count++;
+        current = VARDECLS_NEXT(current);
+    }
+    // Insert newVardeclsNode at the end of the list
     return count;
 }
 

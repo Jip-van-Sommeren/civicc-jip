@@ -90,7 +90,7 @@ void incorrectDimsArrayError()
 
 void assignTypeError(node_st *expr, node_st *varlet)
 {
-    CTI(CTI_ERROR, true, "arg %s iss type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
+    CTI(CTI_ERROR, true, "arg %s is type %s, expected type %s\n", getName(expr), VarTypeToString(getType(expr)), VarTypeToString(getType(varlet)));
     CTIabortOnError();
 }
 
@@ -414,7 +414,7 @@ node_st *SAassign(node_st *node)
     {
         return node;
     }
-    if (NODE_TYPE(expr) == NT_BINOP && NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR && strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM)
+    if (NODE_TYPE(expr) == NT_BINOP && NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR && strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM && (BINOP_OP(expr) = BO_sub || BINOP_OP(expr) == BO_add))
     {
         ASSIGN_UPDATE(node) = true;
     }

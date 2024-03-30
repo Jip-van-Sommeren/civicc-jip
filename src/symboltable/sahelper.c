@@ -111,10 +111,25 @@ enum Type getType(node_st *node)
         tmp = CT_int;
         break;
     case NT_VAR:
-        tmp = SYMBOLENTRY_TYPE(VAR_SYMBOLENTRY(node));
+        if (VAR_SYMBOLENTRY(node) != NULL)
+        {
+            tmp = SYMBOLENTRY_TYPE(VAR_SYMBOLENTRY(node));
+        }
+        else
+        {
+            tmp = VAR_TYPE(node);
+        }
+
         break;
     case NT_VARLET:
-        tmp = SYMBOLENTRY_TYPE(VARLET_SYMBOLENTRY(node));
+        if (VARLET_SYMBOLENTRY(node) != NULL)
+        {
+            tmp = SYMBOLENTRY_TYPE(VARLET_SYMBOLENTRY(node));
+        }
+        else
+        {
+            tmp = VARLET_TYPE(node);
+        }
         break;
     case NT_MONOP:
         tmp = MONOP_TYPE(node);

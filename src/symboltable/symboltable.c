@@ -55,7 +55,7 @@ bool checkDecl(struct data_st *data, char *name)
 /**
  * @fn insertSymbol
  */
-void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, int dimsCount, node_st *params, int index, bool externB)
+void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, int dimsCount, node_st *params, int index, bool externB, bool global)
 {
     if (!data || data->scopeStack->top < 0)
     {
@@ -74,6 +74,7 @@ void insertSymbol(struct data_st *data, char *name, enum Type type, int declared
 
     SYMBOLENTRY_INDEX(newentry) = index;
     SYMBOLENTRY_EXTERNB(newentry) = externB;
+    SYMBOLENTRY_GLOBAL(newentry) = global;
 
     if (!HTinsert(currentSymbolTable, name, newentry))
     {
@@ -275,7 +276,7 @@ node_st *STvardecl(node_st *node)
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false, false);
         vardeclIndex++;
     }
     TRAVchildren(node);
@@ -294,6 +295,21 @@ void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *
     HTinsert(data->scopeStack->scopes[data->scopeStack->top].symbolTable, identifier, entry);
     HTremove(data->unresolvedFuncall, identifier);
     return;
+}
+
+void resolveGlobDef(struct data_st *data, node_st *unresolvedEntry, enum Type type, char *identifier, int declaredAtLine, int index, node_st *dims, int dimsCount, bool glob)
+{
+    SYMBOLENTRY_TYPE(unresolvedEntry) = type;
+    SYMBOLENTRY_DECLAREDATLINE(unresolvedEntry) = declaredAtLine;
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    SYMBOLENTRY_SCOPELEVEL(unresolvedEntry) = currentScope->level;
+    SYMBOLENTRY_SCOPENAME(unresolvedEntry) = strdup(identifier);
+    SYMBOLENTRY_INDEX(unresolvedEntry) = index;
+    SYMBOLENTRY_DIMS(unresolvedEntry) = dims;
+    SYMBOLENTRY_DIMSCOUNT(unresolvedEntry) = dimsCount;
+    SYMBOLENTRY_GLOBAL(unresolvedEntry) = glob;
+    HTinsert(data->scopeStack->scopes[data->scopeStack->top].symbolTable, identifier, unresolvedEntry);
+    HTremove(data->unresolvedFuncall, identifier);
 }
 
 char *makeScopeName(struct data_st *data, char *name)
@@ -348,7 +364,12 @@ node_st *STfundef(node_st *node)
     }
     FUNDEF_INDEX(node) = index;
     FUNDEF_SCOPENAME(node) = makeScopeName(data, identifier);
-
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    bool global = false;
+    if (currentScope->level == 0)
+    {
+        global = true;
+    }
     printf("scopename: %s\n", FUNDEF_SCOPENAME(node));
     if (unresolvedEntry != NULL)
     {
@@ -358,7 +379,7 @@ node_st *STfundef(node_st *node)
     else if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL, 0, params, index, false);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL, 0, params, index, false, global);
     }
     // sert the function symbol into the symbol table with the current scope level
     //  Increment the scope level for the function body
@@ -386,17 +407,25 @@ node_st *STfor(node_st *node)
     int nodetype = NT_VAR;
     // check if initializer
     char str[10];
-    if (findLink(data, str) != NULL)
+
+    sprintf(str, "for_%s_%d", identifier, forCounter);
+    node_st *entry = findLink(data, str);
+    if (entry != NULL)
     {
         forCounter++;
         sprintf(str, "for_%s_%d", identifier, forCounter);
     }
+
     if (newVar)
     {
-        sprintf(str, "for_%s_%d", identifier, forCounter);
-        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL, -1, false);
+        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL, -1, false, false);
         MEMfree(FOR_VAR(node));
         FOR_VAR(node) = strdup(str);
+    }
+    else
+    {
+        node_st *entry = findLink(data, identifier);
+        FOR_VARINDEX(node) = SYMBOLENTRY_INDEX(entry);
     }
 
     // set new name as var name
@@ -430,7 +459,7 @@ node_st *STparam(node_st *node)
     while (paramDims != NULL)
     {
         char *id = IDS_NAME(paramDims);
-        insertSymbol(data, id, CT_int, declaredAtLine, NT_VAR, NULL, 0, NULL, vardeclIndex, false);
+        insertSymbol(data, id, CT_int, declaredAtLine, NT_VAR, NULL, 0, NULL, vardeclIndex, false, false);
         vardeclIndex++;
         paramDims = IDS_NEXT(paramDims);
     }
@@ -440,7 +469,7 @@ node_st *STparam(node_st *node)
     // since params of fundefs in global scope should be at scope level 1 this should be fine
     if (data->scopeStack->top > 0)
     {
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false, false);
         vardeclIndex++;
     }
 
@@ -470,7 +499,7 @@ node_st *STglobdecl(node_st *node)
     if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, GLOBDECL_PARAMS(node), globdeclIndex, true);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, GLOBDECL_PARAMS(node), globdeclIndex, true, true);
         globdeclIndex++;
     }
     TRAVchildren(node);
@@ -491,17 +520,23 @@ node_st *STglobdef(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
     node_st *dims = NULL;
+    node_st *unresolvedEntry = HTlookup(data->unresolvedFuncall, identifier);
+
     if (GLOBDEF_DIMS(node) != NULL)
     {
         // we need to make a new node because it symbol entry child
         dims = exprsToExprs(GLOBDEF_DIMS(node));
     }
     int dimsCount = checkExprDimension(GLOBDEF_DIMS(node));
+    if (unresolvedEntry != NULL)
+    {
 
-    if (!checkDecl(data, identifier))
+        resolveGlobDef(data, unresolvedEntry, type, identifier, declaredAtLine, globdefIndex, dims, dimsCount, true);
+    }
+    else if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, globdefIndex, false);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, globdefIndex, false, true);
         globdefIndex++;
     }
     TRAVchildren(node);
@@ -562,7 +597,16 @@ node_st *STvarlet(node_st *node)
     }
     else
     {
-        undeclaredVar(name, NODE_BLINE(node));
+        if (HTlookup(data->unresolvedFuncall, name) == NULL)
+        {
+            node_st *entry = ASTsymbolentry(NULL, strdup(name), -1, -1, -1, -1, -1, NULL);
+            VARLET_SYMBOLENTRY(node) = entry;
+            HTinsert(data->unresolvedFuncall, name, entry);
+        }
+        else
+        {
+            VARLET_SYMBOLENTRY(node) = HTlookup(data->unresolvedFuncall, name);
+        }
     }
     TRAVchildren(node);
     return node;

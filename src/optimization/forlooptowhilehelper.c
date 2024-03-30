@@ -20,17 +20,24 @@ void insertNewShit(node_st **head, node_st **varDeclHead, node_st *node)
     // if its a newly declared var in the loop we also need to make new vardecl, its not new obviously not needed/+.
     if (FOR_NEWVAR(node))
     {
+        printf("here\n");
         node_st *vardecl = ASTvardecl(NULL, NULL, strdup(FOR_VAR(forNode)), CT_int);
         node_st *tempVardecls = ASTvardecls(vardecl, NULL);
         count = insertVarDeclAtEndAndReturnCount(varDeclHead, tempVardecls);
+        FOR_VARINDEX(node) = count;
+        printf("for var index %d\n", FOR_VARINDEX(node));
     }
 
     node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(forNode)));
-    VARLET_SYMBOLENTRY(varlet) = ASTsymbolentry(NULL, strdup(FOR_VAR(forNode)), CT_int, NODE_BLINE(node), -1, NT_VARLET, 0, NULL);
-    SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(varlet)) = count;
+    // printf("varlet name: %s\n", VARLET_NAME(varlet));
+    // VARLET_SYMBOLENTRY(varlet) = ASTsymbolentry(NULL, strdup(FOR_VAR(forNode)), CT_int, NODE_BLINE(node), -1, NT_VARLET, 0, NULL);
+    // SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(varlet)) = count;
+    // SYMBOLENTRY_GLOBAL(VARLET_SYMBOLENTRY(varlet)) = false;
+    VARLET_INDEX(varlet) = count;
+
     VARLET_TYPE(varlet) = CT_int;
     node_st *newAssign = ASTassign(varlet, CCNcopy(FOR_START_EXPR(forNode)));
-    ASSIGN_UPDATE(newAssign) = true;
+    ASSIGN_UPDATE(newAssign) = false;
     node_st *tmpStmts = ASTstmts(newAssign, NULL);
     insertStmts(head, tmpStmts, NULL);
 }

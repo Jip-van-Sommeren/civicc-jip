@@ -63,7 +63,7 @@ void CONSTTfini()
     return;
 }
 
-void makeConstantTable(node_st **head, node_st **tail, struct data_constt *data)
+void makeConstantTable(node_st **head, struct data_constt *data)
 {
     htable_iter_st *iterInt = HTiterate(data->intTable);
     htable_iter_st *iterFloat = HTiterate(data->floatTable);
@@ -73,14 +73,14 @@ void makeConstantTable(node_st **head, node_st **tail, struct data_constt *data)
 
         node_st *entry = HTiterValue(iterInt);
 
-        appendConstantTableAndUpdateTail(head, tail, entry);
+        appendConstantTable(head, entry);
         iterInt = HTiterateNext(iterInt);
     }
     while (iterFloat != NULL)
     {
 
         node_st *entry = HTiterValue(iterFloat);
-        appendConstantTableAndUpdateTail(head, tail, entry);
+        appendConstantTable(head, entry);
         iterFloat = HTiterateNext(iterFloat);
     }
 
@@ -91,8 +91,7 @@ node_st *CONSTTprogram(node_st *node)
 {
     struct data_constt *data = DATA_CONSTT_GET();
     TRAVchildren(node);
-    node_st *tail = NULL;
-    makeConstantTable(&PROGRAM_CONSTANTTABLE(node), &tail, data);
+    makeConstantTable(&PROGRAM_CONSTANTTABLE(node), data);
     return node;
 }
 

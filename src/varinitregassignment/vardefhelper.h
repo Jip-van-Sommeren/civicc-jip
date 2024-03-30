@@ -13,3 +13,5 @@ void insertVarDecl(node_st **head, node_st *newVardeclsNode, node_st *prevVardec
 void insertVarDeclAtEnd(node_st **head, node_st *newVardeclsNode);
 int insertVarDeclAtEndAndReturnCount(node_st **head, node_st *newVardeclsNode);
 void insertStmts(node_st **head, node_st *newStmtsNode, node_st *prevStmtsNode);
+void insertDeclsAtStart(node_st **head, node_st *node);
+int vardeclCount(node_st **head, char *name);

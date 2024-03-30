@@ -101,15 +101,15 @@ phase CodeGen {
                 int index
             }
         };
-        traversal MakeAssemblyFirst {
-            uid = MAF,
-            nodes = Expr 
+        // traversal MakeAssemblyFirst {
+        //     uid = MAF,
+        //     nodes = Expr 
 
-        };
-        traversal MakeAssemblySecond {
-            uid = MAS,
-            nodes = Stmt
-        };
+        // };
+        // traversal MakeAssemblySecond {
+        //     uid = MAS,
+        //     nodes = Stmt
+        // };
         traversal MakeAssemblyCombine{
             uid = MAC,
             nodes = {Program, FunDef}
@@ -358,7 +358,8 @@ node For {
 
     attributes {
         string var {constructor},
-        bool newVar {constructor}
+        bool newVar {constructor},
+        int varIndex
     }
 };
 
@@ -461,7 +462,8 @@ node SymbolEntry {
         int dimsCount {constructor},
         string scopeName {constructor},
         int index, 
-        bool externB
+        bool externB,
+        bool global
     }
 };
 

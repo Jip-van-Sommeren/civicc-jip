@@ -89,6 +89,7 @@ node_st *VDRATfunbody(node_st *node)
 
                     exprs = EXPRS_NEXT(exprs);
                 }
+
                 node_st *forLoop = createNestedForLoops(dimsExpr, names, dimsCount, assign);
                 VARLET_INDICES(varlet) = dims;
 

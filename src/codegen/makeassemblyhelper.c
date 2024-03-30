@@ -18,7 +18,8 @@
 
 #define MAX_STRING_SIZE 64
 static int statementCounter = 0;
-static int fundefCounter = 0;
+static bool pop = false;
+// static int fundefCounter = 0;
 
 void appendAssemblyListAndUpdateTail(node_st **assemblyList, node_st **assemblyListTail, node_st *assemblyEntry)
 {
@@ -38,22 +39,9 @@ void appendAssemblyListAndUpdateTail(node_st **assemblyList, node_st **assemblyL
     }
 }
 
-void appendConstantTableAndUpdateTail(node_st **constantTable, node_st **constantTableTail, node_st *constantTableEntry)
+void appendConstantTable(node_st **constantTable, node_st *constantTableEntry)
 {
-    // Check if the list is empty
-    if (*constantTable == NULL)
-    {
-        // This is the first expression in the list.
-        *constantTable = ASTconstanttable(constantTableEntry, NULL);
-        *constantTableTail = *constantTable; // The tail is the first node itself.
-    }
-    else
-    {
-        // There are already expressions in the list. Append the new expression.
-        node_st *newConstantTableNode = ASTconstanttable(constantTableEntry, NULL);
-        CONSTANTTABLE_NEXT(*constantTableTail) = newConstantTableNode; // Append new expression to the end.
-        *constantTableTail = newConstantTableNode;                     // Update the tail to the new node.
-    }
+    *constantTable = ASTconstanttable(constantTableEntry, *constantTable);
 }
 
 node_st *returnTypeAssembly(node_st *expr)
@@ -121,6 +109,12 @@ node_st *returnTypeAssembly(node_st *expr)
 node_st *returnVarAssembly(node_st *expr)
 {
     char *str = malloc(MAX_STRING_SIZE * sizeof(char)); // Allocate memory dynamically
+    bool global = false;
+    if (VAR_SYMBOLENTRY(expr) != NULL)
+    {
+        global = SYMBOLENTRY_GLOBAL(VAR_SYMBOLENTRY(expr));
+    }
+    printf("var%d %s\n", VAR_INDEX(expr), VAR_NAME(expr));
     node_st *assembly = NULL;
     if (!str)
         return NULL; // Check for allocation failure
@@ -129,7 +123,11 @@ node_st *returnVarAssembly(node_st *expr)
     {
     case CT_int:
         sprintf(str, "%d", VAR_INDEX(expr));
-        if (VAR_INDEX(expr) < 4)
+        if (global)
+        {
+            assembly = ASTassembly(strdup("    iloadg "), strdup(str));
+        }
+        else if (VAR_INDEX(expr) < 4)
         {
             assembly = ASTassembly(strdup("    iload_"), strdup(str));
         }
@@ -140,7 +138,11 @@ node_st *returnVarAssembly(node_st *expr)
         break;
     case CT_float:
         sprintf(str, "%d", VAR_INDEX(expr));
-        if (VAR_INDEX(expr) < 4)
+        if (global)
+        {
+            assembly = ASTassembly(strdup("    floadg "), strdup(str));
+        }
+        else if (VAR_INDEX(expr) < 4)
         {
             assembly = ASTassembly(strdup("    fload_"), strdup(str));
         }
@@ -151,7 +153,11 @@ node_st *returnVarAssembly(node_st *expr)
         break;
     case CT_bool:
         sprintf(str, "%d", VAR_INDEX(expr));
-        if (VAR_INDEX(expr) < 4)
+        if (global)
+        {
+            assembly = ASTassembly(strdup("    bloadg "), strdup(str));
+        }
+        else if (VAR_INDEX(expr) < 4)
         {
             assembly = ASTassembly(strdup("    bload_"), strdup(str));
         }
@@ -181,6 +187,7 @@ void generateTernaryAssembly(node_st **head, node_st **tail, node_st *ternNode)
     sprintf(otherwiseLabel, "_lab%d_otherwise", statementCounter);
     statementCounter++;
     sprintf(endLabel, "_lab%d_end", statementCounter);
+    statementCounter++;
 
     // Generate assembly for the condition
     generateAssemblyForExpr(head, tail, TERN_COND(ternNode));
@@ -210,29 +217,55 @@ void generateTernaryAssembly(node_st **head, node_st **tail, node_st *ternNode)
 
 node_st *returnVarletAssembly(node_st *expr)
 {
+    bool global = false;
+    enum Type type = VARLET_TYPE(expr);
+    if (VARLET_SYMBOLENTRY(expr) != NULL)
+    {
+        type = SYMBOLENTRY_TYPE(VARLET_SYMBOLENTRY(expr));
+        global = SYMBOLENTRY_GLOBAL(VARLET_SYMBOLENTRY(expr));
+    }
     char *str = malloc(MAX_STRING_SIZE * sizeof(char)); // Allocate memory dynamically
     node_st *assembly = NULL;
     if (!str)
         return NULL; // Check for allocation failure
-
-    switch (VARLET_TYPE(expr))
+    printf("varlet index %d\n", VARLET_INDEX(expr));
+    switch (type)
     {
     case CT_int:
-
-        sprintf(str, "%d", SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(expr)));
-        assembly = ASTassembly(strdup("    istore "), strdup(str));
-
+        if (global)
+        {
+            sprintf(str, "%d", VARLET_INDEX(expr));
+            assembly = ASTassembly(strdup("    istoreg "), strdup(str));
+        }
+        else
+        {
+            sprintf(str, "%d", VARLET_INDEX(expr));
+            assembly = ASTassembly(strdup("    istore "), strdup(str));
+        }
         break;
     case CT_float:
-
-        sprintf(str, "%d", SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(expr)));
-        assembly = ASTassembly(strdup("    fstore "), strdup(str));
-
+        if (global)
+        {
+            sprintf(str, "%d", VARLET_INDEX(expr));
+            assembly = ASTassembly(strdup("    fstoreg "), strdup(str));
+        }
+        else
+        {
+            sprintf(str, "%d", VARLET_INDEX(expr));
+            assembly = ASTassembly(strdup("    fstore "), strdup(str));
+        }
         break;
     case CT_bool:
-        sprintf(str, "%d", SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(expr)));
-        assembly = ASTassembly(strdup("    bstore "), strdup(str));
-
+        if (global)
+        {
+            sprintf(str, "%d", VARLET_INDEX(expr));
+            assembly = ASTassembly(strdup("    bstoreg "), strdup(str));
+        }
+        else
+        {
+            sprintf(str, "%d", VARLET_INDEX(expr));
+            assembly = ASTassembly(strdup("    bstore "), strdup(str));
+        }
         break;
 
     default:
@@ -285,7 +318,18 @@ char *getBinOpOpAssembly(enum BinOpType op, enum Type type)
         }
         break;
     case BO_div:
-        sprintf(str, type == CT_int ? "    idiv" : "    fdiv");
+        if (type == CT_int)
+        {
+            sprintf(str, "    idiv");
+        }
+        else if (type == CT_float)
+        {
+            sprintf(str, "    fdiv");
+        }
+        else
+        {
+            fprintf(stderr, "Typeerrror\n");
+        }
         break;
     case BO_mod:
         if (type == CT_int)
@@ -303,24 +347,43 @@ char *getBinOpOpAssembly(enum BinOpType op, enum Type type)
     case BO_le:
     case BO_gt:
     case BO_ge:
+        if (type == CT_int)
+        {
+            printf("herrererer\n");
+            sprintf(str, op == BO_lt   ? "    ilt"
+                         : op == BO_le ? "    ile"
+                         : op == BO_gt ? "    igt"
+                                       : "    ige");
+        }
+        else if (type == CT_float)
+        {
+            sprintf(str, op == BO_lt   ? "    flt"
+                         : op == BO_le ? "    fle"
+                         : op == BO_gt ? "    fgt"
+                                       : "    fge");
+        }
+        else
+        {
+            // Handle error: comparison for boolean not directly supported in this context
+            free(str);
+            return NULL;
+        }
+        break;
+
     case BO_eq:
     case BO_ne:
         // Comparison operations return boolean results but the instruction used depends on the operands' type
         if (type == CT_int)
         {
-            sprintf(str, op == BO_eq ? "    ieq" : op == BO_ne ? "    ine"
-                                               : op == BO_lt   ? "    ilt"
-                                               : op == BO_le   ? "    ile"
-                                               : op == BO_gt   ? "    igt"
-                                                               : "    ige");
+            sprintf(str, op == BO_eq ? "    ieq" : "    ine");
         }
         else if (type == CT_float)
         {
-            sprintf(str, op == BO_eq ? "    feq" : op == BO_ne ? "    fne"
-                                               : op == BO_lt   ? "    flt"
-                                               : op == BO_le   ? "    fle"
-                                               : op == BO_gt   ? "    fgt"
-                                                               : "    fge");
+            sprintf(str, op == BO_eq ? "    feq" : "    fne");
+        }
+        else if (type == CT_bool)
+        {
+            sprintf(str, op == BO_eq ? "    beq" : "    bne");
         }
         else
         {
@@ -391,6 +454,17 @@ node_st *enterRoutine(int scope)
     return enterRoutine;
 }
 
+void genAssemblyForFuncallArgs(node_st **head, node_st **tail, node_st *exprs)
+{
+    while (exprs != NULL)
+    {
+
+        node_st *expr = EXPRS_EXPR(exprs);
+        generateAssemblyForExpr(head, tail, expr);
+        exprs = EXPRS_NEXT(exprs);
+    }
+}
+
 void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
 {
     node_st *symbolentry = FUNCALL_SYMBOLENTRY(expr);
@@ -398,18 +472,11 @@ void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
     node_st *enterRoutine = NULL;
     node_st *funcallAsm = NULL;
     node_st *exprs = FUNCALL_FUN_ARGS(expr);
-    while (exprs != NULL)
-    {
-        printf("here22\n");
-        node_st *expr = EXPRS_EXPR(exprs);
-        printf("node type;%d\n", NODE_TYPE(expr));
-        generateAssemblyForExpr(head, tail, expr);
-        exprs = EXPRS_NEXT(exprs);
-    }
+    printf("index %d funcall: %s\n", SYMBOLENTRY_INDEX(symbolentry), FUNCALL_NAME(expr));
     if (SYMBOLENTRY_SCOPELEVEL(symbolentry) == 0 && SYMBOLENTRY_INDEX(symbolentry) > -1 && !SYMBOLENTRY_EXTERNB(symbolentry))
     {
         enterRoutine = ASTassembly(strdup("    isrg"), strdup(""));
-        sprintf(str, "    %d _fun%d_%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), FUNCALL_NAME(expr));
+        sprintf(str, "%d _fun%d_%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), FUNCALL_NAME(expr));
         funcallAsm = ASTassembly(strdup("    jsr "), strdup(str));
     }
     else if (SYMBOLENTRY_INDEX(symbolentry) == -1 && !SYMBOLENTRY_EXTERNB(symbolentry))
@@ -427,14 +494,16 @@ void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
     else
     {
         enterRoutine = ASTassembly(strdup("    isrl"), strdup(""));
-        sprintf(str, "%d _fun%d_%s_%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry), FUNCALL_NAME(expr));
+        sprintf(str, "%d _fun%d_%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry));
 
         funcallAsm = ASTassembly(strdup("    jsr"), strdup(str));
     }
+
     node_st *leaveRoutine = leaveSubRoutine(SYMBOLENTRY_TYPE(symbolentry), SYMBOLENTRY_EXTERNB(symbolentry));
     free(str);
 
     appendAssemblyListAndUpdateTail(head, tail, enterRoutine);
+    genAssemblyForFuncallArgs(head, tail, exprs);
     appendAssemblyListAndUpdateTail(head, tail, funcallAsm);
     if (leaveRoutine != NULL)
     {
@@ -455,11 +524,11 @@ void generateCastAssembly(node_st **head, node_st **tail, node_st *expr)
     }
     if (typeCast == CT_int)
     {
-        cast = ASTassembly(strdup("    i2f"), strdup(""));
+        cast = ASTassembly(strdup("    f2i"), strdup(""));
     }
     else
     {
-        cast = ASTassembly(strdup("    f2i"), strdup(""));
+        cast = ASTassembly(strdup("    i2f"), strdup(""));
     }
     appendAssemblyListAndUpdateTail(head, tail, cast);
 }
@@ -522,8 +591,9 @@ void generateAssemblyForExpr(node_st **head, node_st **tail, node_st *expr)
         generateAssemblyForExpr(head, tail, BINOP_LEFT(expr));
         generateAssemblyForExpr(head, tail, BINOP_RIGHT(expr));
         // Combine left and right lists
-        printf("binop op %d\n", BINOP_OP(expr));
+        printf("binop type %d\n", BINOP_TYPE(expr));
         char *binopAssembly = getBinOpOpAssembly(BINOP_OP(expr), getType(BINOP_LEFT(expr)));
+        printf("binop asm %s\n", binopAssembly);
         node_st *binopNode = ASTassembly(strdup(binopAssembly), strdup(""));
         free(binopAssembly);
         appendAssemblyListAndUpdateTail(head, tail, binopNode);
@@ -564,12 +634,12 @@ void generateAssemblyForExpr(node_st **head, node_st **tail, node_st *expr)
     return;
 }
 
-void generateAssemblyForIfElse(node_st **head, node_st **tail, node_st *whileStmt);
+void generateAssemblyForIfElse(node_st **head, node_st **tail, node_st *ifElseStmt);
 void generateAssemblyForWhile(node_st **head, node_st **tail, node_st *whileStmt);
-void generateAssemblyForDoWhile(node_st **head, node_st **tail, node_st *whileStmt);
-void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *whileStmt);
-void generateAssemblyForReturn(node_st **head, node_st **tail, node_st *whileStmt);
-void generateAssemblyForExprStmt(node_st **head, node_st **tail, node_st *whileStmt);
+void generateAssemblyForDoWhile(node_st **head, node_st **tail, node_st *doWhileStmt);
+void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *assignStmt);
+void generateAssemblyForReturn(node_st **head, node_st **tail, node_st *returnStmt);
+void generateAssemblyForExprStmt(node_st **head, node_st **tail, node_st *exprStmt);
 
 void generateAssemblyForStmt(node_st **head, node_st **tail, node_st *node)
 {
@@ -622,7 +692,7 @@ void generateAssemblyForWhile(node_st **head, node_st **tail, node_st *whileStmt
     snprintf(labelStart, sizeof(labelStart), "_lab%d_while", statementCounter);
     statementCounter++;
     snprintf(labelEnd, sizeof(labelEnd), "_lab%d_end", statementCounter);
-
+    statementCounter++;
     // Label for loop start
     appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup(labelStart), strdup(":")));
 
@@ -766,6 +836,7 @@ void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *assignSt
     }
     else
     {
+
         node_st *varletAsm = returnVarletAssembly(ASSIGN_LET(assignStmt));
 
         generateAssemblyForExpr(head, tail, ASSIGN_EXPR(assignStmt));
@@ -795,7 +866,14 @@ void generateAssemblyForIfElse(node_st **head, node_st **tail, node_st *ifElseSt
     if (IFELSE_COND(ifElseStmt))
     {
         generateAssemblyForExpr(head, tail, IFELSE_COND(ifElseStmt));
-        appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("    branch_f "), strdup(labelElse)));
+        if (IFELSE_ELSE_BLOCK(ifElseStmt))
+        {
+            appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("    branch_f "), strdup(labelElse)));
+        }
+        else
+        {
+            appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("    branch_f "), strdup(labelEnd)));
+        }
     }
 
     // Generate assembly for the then-block
@@ -805,14 +883,14 @@ void generateAssemblyForIfElse(node_st **head, node_st **tail, node_st *ifElseSt
         generateAssemblyForStmt(head, tail, STMTS_STMT(innerStmts));
         innerStmts = STMTS_NEXT(innerStmts);
     }
-    appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("    jump "), strdup(labelEnd)));
 
     // Label for else part
-    appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup(labelElse), strdup(":")));
 
     // Generate assembly for the else-block, if it exists
     if (IFELSE_ELSE_BLOCK(ifElseStmt))
     {
+        appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup("    jump "), strdup(labelEnd)));
+        appendAssemblyListAndUpdateTail(head, tail, ASTassembly(strdup(labelElse), strdup(":")));
         node_st *innerStmts = IFELSE_ELSE_BLOCK(ifElseStmt);
         while (innerStmts != NULL)
         {
@@ -911,7 +989,7 @@ void FundefDefAssembly(node_st **head, node_st **tail, node_st *fundef)
 
     node_st *assembly = NULL;
     char *str = malloc(MAX_STRING_SIZE * sizeof(char));
-    if (strcmp(FUNDEF_SCOPENAME(fundef), "glob") == 0 && FUNDEF_INDEX(fundef) > -1)
+    if (FUNDEF_INDEX(fundef) > -1)
     {
 
         sprintf(str, "_fun%d_%s:", FUNDEF_INDEX(fundef), FUNDEF_NAME(fundef));
@@ -924,11 +1002,6 @@ void FundefDefAssembly(node_st **head, node_st **tail, node_st *fundef)
         assembly = ASTassembly(strdup(str), strdup(""));
     }
 
-    else
-    {
-        sprintf(str, "_fun%d_%s_%s", FUNDEF_INDEX(fundef), FUNDEF_SCOPENAME(fundef), FUNDEF_NAME(fundef));
-        assembly = ASTassembly(strdup(str), strdup(""));
-    }
     int vardeclcount = countVarDecls(FUNBODY_VARDECLS(FUNDEF_BODY(fundef)));
     char *countStr = malloc(5 * sizeof(char));
     sprintf(countStr, "%d", vardeclcount);
@@ -958,6 +1031,7 @@ void setToOutputFile(node_st *node)
 
 void generateAssemblyForFundef(node_st **head, node_st **tail, node_st *node)
 {
+    // statementCounter = 0;
     FundefDefAssembly(head, tail, node);
     node_st *stmts = FUNBODY_STMTS(FUNDEF_BODY(node));
     while (stmts != NULL)

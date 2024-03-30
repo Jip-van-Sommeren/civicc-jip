@@ -54,11 +54,23 @@ node_st *assemblyEntry(node_st *decl)
     switch (NODE_TYPE(decl))
     {
     case NT_GLOBDECL:
+    {
+        node_st *params = GLOBDECL_PARAMS(decl);
+
         sprintf(str, "\"%s\" %s", GLOBDECL_NAME(decl), VarTypeToString(GLOBDECL_TYPE(decl)));
+        while (params != NULL)
+        {
+            node_st *param = PARAMS_PARAM(params);
+            strcat(str, " ");
+            strcat(str, VarTypeToString(PARAM_TYPE(param)));
+            params = PARAMS_NEXT(params);
+        }
+
         assemblyEntry = ASTassembly(strdup(".importfun "), strdup(str));
 
         free(str);
         break;
+    }
     case NT_GLOBDEF:
         sprintf(str, "%s", VarTypeToString(GLOBDEF_TYPE(decl)));
         assemblyEntry = ASTassembly(strdup(".global "), strdup(str));

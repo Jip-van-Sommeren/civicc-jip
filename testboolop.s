@@ -1,107 +1,70 @@
-_fun0__printBool_printBool
-    bload_0
-    branch_f _lab1_else
+test:
+    iload_0
+    iloadc_0
+    ieq
+    branch_f _lab1_end
+    iloadc 0
+    istore 0
+_lab1_end:
+    iload_0
     isrg
-    jsre 0
-    jump _lab2_end
-_lab1_else:
-    isrg
-    jsre 0
+    iload_0
+    iloadc_1
+    isub
+    jsr 1 _fun0_factorial
+    ipop
+    imul
+    ireturn
+    
+_fun0_factorial:
+    iload_0
+    iloadc_0
+    ieq
+    branch_f _lab2_end
+    iloadc_1
+    ireturn
 _lab2_end:
+    iload_0
     isrg
-    jsre 1
-    return
-    
-_fun1__t_t
-    isrg
-    jsre 0
-    bloadc_t
-    breturn
-    
-_fun2__f_f
-    isrg
-    jsre 0
-    bloadc_f
-    breturn
+    iload_0
+    iloadc_1
+    isub
+    jsr 1 _fun0_factorial
+    ipop
+    imul
+    ireturn
     
 main:
+    esr 1
+    iloadc_0
+    istore 0
+_lab2_while:
+    iload_0
+    iloadc 1
+    ilt
+branch_f _lab3_end
+    iinc_1 0
     isrg
-    jsr     1 _fun0_printBool
     isrg
-    jsr     1 _fun0_printBool
+    iload_-1
+    jsr 1 _fun0_factorial
+    ipop
+    jsre 0
     isrg
-    jsr     1 _fun0_printBool
+    iloadc_1
+    jsre 2
+    jump _lab2_while
+_lab3_end:
     isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsre 1
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
-    jsr     1 _fun0_printBool
-    isrg
+    iloadc_1
     jsre 1
     iloadc_0
     ireturn
     
-.const int 5
-.const float 5.000000
+.const int 6
+.const int 2
+.exportfun "test" int test
 .exportfun "main" int main
-.importfun "printInt" void
-.importfun "printNewlines" void
+.importfun "printInt" void int
+.importfun "printNewlines" void int
+.importfun "printSpaces" void int

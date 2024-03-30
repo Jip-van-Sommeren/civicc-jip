@@ -535,6 +535,7 @@ node_st *PRTvarlet(node_st *node)
         printf("] ");
     }
     printf("%s", VARLET_NAME(node));
+
     return node;
 }
 

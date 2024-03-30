@@ -46,16 +46,16 @@ export int main() {
     printBool(f() || f());
     printNewlines(1);
 
-    //printBool(t() * f());
-    //printBool(f() * t());
-    //printBool(t() * t());
-    //printBool(f() * f());
+    printBool(t() * f());
+    printBool(f() * t());
+    printBool(t() * t());
+    printBool(f() * f());
     printNewlines(1);
 
-    //printBool(t() + f());
-    //printBool(f() + t());
-    //printBool(t() + t());
-    //printBool(f() + f());
+    printBool(t() + f());
+    printBool(f() + t());
+    printBool(t() + t());
+    printBool(f() + f());
     printNewlines(1);
 
     printBool((bool)5);
