@@ -28,7 +28,6 @@ void VDRAfini()
 node_st *VDRAprogram(node_st *node)
 {
     node_st *assignStmts = NULL; // Placeholder for the first assignment in the list
-    node_st *lastDecls = NULL;
 
     node_st *assignStmtsTail = NULL; // Tail of the list.
 
@@ -55,7 +54,6 @@ node_st *VDRAprogram(node_st *node)
         {
             TRAVopt(DECLS_DECL(decls));
         }
-        lastDecls = decls;
         decls = DECLS_NEXT(decls);
     }
 
@@ -73,6 +71,7 @@ node_st *VDRAprogram(node_st *node)
 
 node_st *VDRAfunbody(node_st *node)
 {
+    TRAVchildren(node);
     node_st *varDeclsNode = FUNBODY_VARDECLS(node);
     node_st *prevVardeclsNode = NULL;
     int i = 1;

@@ -39,8 +39,8 @@ add_executable(civicc ${FLEX_CivicLexer_OUTPUTS} ${BISON_CivicParser_OUTPUTS}
     # Youre free to remove the demo directory and these entries.
     src/varinitregassignment/vardef.c  src/varinitregassignment/vardef2.c src/varinitregassignment/vardefhelper.c 
     src/optimization/forlooptowhilehelper.c  src/optimization/forlooptowhile.c src/optimization/forlooptowhileloop2.c
-     src/codegen/constanttable.c   src/codegen/makeassembly.c  src/codegen/makeassembly1.c src/codegen/makeassemblyhelper.c
-src/codegen/makeassembly2.c src/codegen/makeassembly3.c src/codegen/makeassemblycombine.c)
+     src/codegen/constanttable.c   src/codegen/makeassembly.c   src/codegen/makeassemblyhelper.c
+ src/codegen/makeassemblycombine.c)
 
 target_compile_options(civicc PRIVATE
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Wno-unused-function>

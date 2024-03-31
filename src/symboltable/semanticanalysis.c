@@ -420,7 +420,11 @@ node_st *SAassign(node_st *node)
     {
         return node;
     }
-    if (NODE_TYPE(expr) == NT_BINOP && NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR && strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM && (BINOP_OP(expr) == BO_sub || BINOP_OP(expr) == BO_add) && !SYMBOLENTRY_GLOBAL(VAR_SYMBOLENTRY(BINOP_LEFT(expr))))
+    if (NODE_TYPE(expr) == NT_BINOP &&
+        NODE_TYPE(BINOP_LEFT(expr)) == NT_VAR &&
+        strcmp(VARLET_NAME(varlet), VAR_NAME(BINOP_LEFT(expr))) == 0 && NODE_TYPE(BINOP_RIGHT(expr)) == NT_NUM &&
+        (BINOP_OP(expr) == BO_sub || BINOP_OP(expr) == BO_add) &&
+        !SYMBOLENTRY_GLOBAL(VAR_SYMBOLENTRY(BINOP_LEFT(expr))))
     {
 
         ASSIGN_UPDATE(node) = true;

@@ -101,24 +101,12 @@ phase CodeGen {
                 int index
             }
         };
-        // traversal MakeAssemblyFirst {
-        //     uid = MAF,
-        //     nodes = Expr 
 
-        // };
-        // traversal MakeAssemblySecond {
-        //     uid = MAS,
-        //     nodes = Stmt
-        // };
         traversal MakeAssemblyCombine{
             uid = MAC,
             nodes = {Program, FunDef}
         };
-        traversal MakeAssemblyThird {
-            uid = MAT,
-            nodes = Expr | Stmt
 
-        };
         traversal MakeAssemblyFinal {
             uid = MA,
             nodes = {Program}
@@ -211,7 +199,8 @@ nodeset Linked {
     nodes = {FunCall, Var, VarLet},
     attributes {
         SymbolEntry symbolEntry,
-        int Index
+        int Index,
+        int currentScope
     }
 };
 

@@ -314,17 +314,14 @@ int insertVarDeclAtEndAndReturnCount(node_st **head, node_st *newVardeclsNode)
     return count;
 }
 
-int vardeclCount(node_st **head, char *name)
+int vardeclCount(node_st **head)
 {
     int count = 0;
 
     node_st *current = *head;
     while (current != NULL)
     {
-        // if (strcmp(VARDECL_NAME(VARDECLS_VARDECL(current)), name) == 0)
-        // {
-        //     return count;
-        // }
+
         count++;
         current = VARDECLS_NEXT(current);
     }

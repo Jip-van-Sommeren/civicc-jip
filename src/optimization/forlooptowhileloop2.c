@@ -16,7 +16,6 @@
 node_st *FTWTfor(node_st *node)
 {
     TRAVchildren(node);
-    // node_st *initExpr = FOR_START_EXPR(node);
     enum BinOpType loopUpdater = BO_add;
     enum BinOpType loopExtreme = BO_lt;
     node_st *step = NULL;
@@ -51,8 +50,6 @@ node_st *FTWTfor(node_st *node)
     VAR_TYPE(var) = CT_int;
     VAR_INDEX(var) = FOR_VARINDEX(node);
 
-    printf("for var index %d\n", FOR_VARINDEX(node));
-
     node_st *binopUpdate = ASTbinop(var, updateExpr, loopUpdater);
     BINOP_TYPE(binopUpdate) = CT_int;
     node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(node)));
@@ -63,8 +60,6 @@ node_st *FTWTfor(node_st *node)
     // Assuming you have a function to append statements to a block
     node_st *newStmtsNode = ASTstmts(updateAssign, NULL);
 
-    // STMTS_NEXT(newStmtsNode) = WHILE_BLOCK(whileNode);
-    // WHILE_BLOCK(whileNode) = newStmtsNode;
     insertStmtsAtEnd(&WHILE_BLOCK(whileNode), newStmtsNode);
 
     CCNfree(node);

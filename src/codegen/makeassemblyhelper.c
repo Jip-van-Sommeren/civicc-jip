@@ -124,11 +124,13 @@ node_st *returnVarAssembly(node_st *expr)
     bool global = false;
     bool externB = false;
     int index = VAR_INDEX(expr);
+    int scopedif = 0;
     if (VAR_SYMBOLENTRY(expr) != NULL)
     {
         externB = SYMBOLENTRY_EXTERNB(VAR_SYMBOLENTRY(expr));
         global = SYMBOLENTRY_GLOBAL(VAR_SYMBOLENTRY(expr));
         index = SYMBOLENTRY_INDEX(VAR_SYMBOLENTRY(expr));
+        scopedif = VAR_CURRENTSCOPE(expr) - SYMBOLENTRY_SCOPELEVEL(VAR_SYMBOLENTRY(expr));
     }
     node_st *assembly = NULL;
     if (!str)
@@ -137,51 +139,84 @@ node_st *returnVarAssembly(node_st *expr)
     switch (VAR_TYPE(expr))
     {
     case CT_int:
-        sprintf(str, "%d", index);
         if (externB)
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    iloade "), strdup(str));
         }
         else if (global)
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    iloadg "), strdup(str));
+        }
+        else if (scopedif > 0)
+        {
+            sprintf(str, "%d %d", scopedif, index);
+            assembly = ASTassembly(strdup("    iloadn "), strdup(str));
         }
         else if (index < 4)
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    iload_"), strdup(str));
         }
         else
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    iload "), strdup(str));
         }
         break;
     case CT_float:
-        sprintf(str, "%d", index);
-        if (global)
+        if (externB)
         {
+            sprintf(str, "%d", index);
+            assembly = ASTassembly(strdup("    floade "), strdup(str));
+        }
+        else if (global)
+        {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    floadg "), strdup(str));
+        }
+        else if (scopedif > 0)
+        {
+            sprintf(str, "%d %d", scopedif, index);
+            assembly = ASTassembly(strdup("    floadn "), strdup(str));
         }
         else if (index < 4)
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    fload_"), strdup(str));
         }
         else
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    fload "), strdup(str));
         }
         break;
     case CT_bool:
-        sprintf(str, "%d", index);
-        if (global)
+
+        if (externB)
         {
+            sprintf(str, "%d", index);
+            assembly = ASTassembly(strdup("    bloade "), strdup(str));
+        }
+        else if (global)
+        {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    bloadg "), strdup(str));
+        }
+        else if (scopedif > 0)
+        {
+            sprintf(str, "%d %d", scopedif, index);
+            assembly = ASTassembly(strdup("    bloadn "), strdup(str));
         }
         else if (index < 4)
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    bload_"), strdup(str));
         }
         else
         {
+            sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    bload "), strdup(str));
         }
         break;
@@ -239,11 +274,13 @@ node_st *returnVarletAssembly(node_st *expr)
     bool global = false;
     enum Type type = VARLET_TYPE(expr);
     int index = VARLET_INDEX(expr);
+    int scopedif = 0;
     if (VARLET_SYMBOLENTRY(expr) != NULL)
     {
         type = SYMBOLENTRY_TYPE(VARLET_SYMBOLENTRY(expr));
         global = SYMBOLENTRY_GLOBAL(VARLET_SYMBOLENTRY(expr));
         index = SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(expr));
+        scopedif = VARLET_CURRENTSCOPE(expr) - SYMBOLENTRY_SCOPELEVEL(VARLET_SYMBOLENTRY(expr));
     }
     char *str = malloc(MAX_STRING_SIZE * sizeof(char)); // Allocate memory dynamically
     node_st *assembly = NULL;
@@ -257,6 +294,12 @@ node_st *returnVarletAssembly(node_st *expr)
             sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    istoreg "), strdup(str));
         }
+        else if (scopedif > 0)
+        {
+            sprintf(str, "%d %d", scopedif, index);
+            assembly = ASTassembly(strdup("    istoren "), strdup(str));
+        }
+
         else
         {
             sprintf(str, "%d", index);
@@ -269,6 +312,12 @@ node_st *returnVarletAssembly(node_st *expr)
             sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    fstoreg "), strdup(str));
         }
+        else if (scopedif > 0)
+        {
+            sprintf(str, "%d %d", scopedif, index);
+            assembly = ASTassembly(strdup("    fstoren "), strdup(str));
+        }
+
         else
         {
             sprintf(str, "%d", index);
@@ -281,6 +330,12 @@ node_st *returnVarletAssembly(node_st *expr)
             sprintf(str, "%d", index);
             assembly = ASTassembly(strdup("    bstoreg "), strdup(str));
         }
+        else if (scopedif > 0)
+        {
+            sprintf(str, "%d %d", scopedif, index);
+            assembly = ASTassembly(strdup("    bstoren "), strdup(str));
+        }
+
         else
         {
             sprintf(str, "%d", index);
@@ -494,19 +549,21 @@ void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
 {
     node_st *symbolentry = FUNCALL_SYMBOLENTRY(expr);
     char *str = malloc(MAX_STRING_SIZE * sizeof(char));
+    char *str2 = malloc(MAX_STRING_SIZE * sizeof(char));
     node_st *enterRoutine = NULL;
     node_st *funcallAsm = NULL;
     node_st *exprs = FUNCALL_FUN_ARGS(expr);
+
     if (SYMBOLENTRY_SCOPELEVEL(symbolentry) == 0 && SYMBOLENTRY_INDEX(symbolentry) > -1 && !SYMBOLENTRY_EXTERNB(symbolentry))
     {
         enterRoutine = ASTassembly(strdup("    isrg"), strdup(""));
-        sprintf(str, "%d _fun%d_%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), FUNCALL_NAME(expr));
+        sprintf(str, "%d _fun%d%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry));
         funcallAsm = ASTassembly(strdup("    jsr "), strdup(str));
     }
     else if (SYMBOLENTRY_INDEX(symbolentry) == -1 && !SYMBOLENTRY_EXTERNB(symbolentry))
     {
         enterRoutine = ASTassembly(strdup("    isrg"), strdup(""));
-        sprintf(str, "%d %s", FUNCALL_INPUTCOUNT(expr), FUNCALL_NAME(expr));
+        sprintf(str, "%d %s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_SCOPENAME(symbolentry));
         funcallAsm = ASTassembly(strdup("    jsr "), strdup(str));
     }
     else if (SYMBOLENTRY_EXTERNB(symbolentry))
@@ -515,15 +572,33 @@ void generateFuncallAssembly(node_st **head, node_st **tail, node_st *expr)
         sprintf(str, "%d", SYMBOLENTRY_INDEX(symbolentry));
         funcallAsm = ASTassembly(strdup("    jsre "), strdup(str));
     }
+    else if (SYMBOLENTRY_SCOPELEVEL(symbolentry) > 0 && (FUNCALL_CURRENTSCOPE(expr) - SYMBOLENTRY_SCOPELEVEL(symbolentry) == 1))
+    {
+        enterRoutine = ASTassembly(strdup("    isr"), strdup(""));
+        sprintf(str, "%d _fun%d%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry));
+
+        funcallAsm = ASTassembly(strdup("    jsr "), strdup(str));
+    }
+    else if (SYMBOLENTRY_SCOPELEVEL(symbolentry) > 0 && (FUNCALL_CURRENTSCOPE(expr) - SYMBOLENTRY_SCOPELEVEL(symbolentry) > 1))
+    {
+        int dif = FUNCALL_CURRENTSCOPE(expr) - SYMBOLENTRY_SCOPELEVEL(symbolentry) - 1;
+
+        sprintf(str2, "    isrn %d", dif);
+        enterRoutine = ASTassembly(strdup(str2), strdup(""));
+        sprintf(str, "%d _fun%d%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry));
+        funcallAsm = ASTassembly(strdup("    jsr "), strdup(str));
+    }
     else
     {
         enterRoutine = ASTassembly(strdup("    isrl"), strdup(""));
-        sprintf(str, "%d _fun%d_%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry));
+        sprintf(str, "%d _fun%d%s", FUNCALL_INPUTCOUNT(expr), SYMBOLENTRY_INDEX(symbolentry), SYMBOLENTRY_SCOPENAME(symbolentry));
 
-        funcallAsm = ASTassembly(strdup("    jsr"), strdup(str));
+        funcallAsm = ASTassembly(strdup("    jsr "), strdup(str));
     }
 
     free(str);
+    free(str2);
+
     node_st *leaveRoutine = NULL;
     if (pop)
     {
@@ -543,7 +618,6 @@ void generateCastAssembly(node_st **head, node_st **tail, node_st *expr)
 {
     generateAssemblyForExpr(head, tail, CAST_EXPR(expr));
     enum Type typeExpr = getType(CAST_EXPR(expr));
-    printf("type: %d\n", typeExpr);
     enum Type typeCast = CAST_TYPE(expr);
 
     node_st *cast = NULL;
@@ -862,9 +936,16 @@ void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *assignSt
 {
     if (ASSIGN_UPDATE(assignStmt))
     {
-        printf("herer %d\n", BINOP_OP(ASSIGN_EXPR(assignStmt)));
-        int step = NUM_VAL(BINOP_RIGHT(ASSIGN_EXPR(assignStmt)));
-        node_st *assembly = returnStepAssembly(BINOP_OP(ASSIGN_EXPR(assignStmt)), step, VARLET_INDEX(ASSIGN_LET(assignStmt)));
+        int stepIndex = 1;
+        if (NUM_VAL(BINOP_RIGHT(ASSIGN_EXPR(assignStmt))) == 1)
+        {
+            stepIndex = 1;
+        }
+        else if (NUM_LINK(BINOP_RIGHT(ASSIGN_EXPR(assignStmt))) != NULL)
+        {
+            stepIndex = CONSTANTENTRY_INDEX(NUM_LINK(BINOP_RIGHT(ASSIGN_EXPR(assignStmt))));
+        }
+        node_st *assembly = returnStepAssembly(BINOP_OP(ASSIGN_EXPR(assignStmt)), stepIndex, VARLET_INDEX(ASSIGN_LET(assignStmt)));
         appendAssemblyListAndUpdateTail(head, tail, assembly);
     }
     else
@@ -883,7 +964,6 @@ void generateAssemblyForAssign(node_st **head, node_st **tail, node_st *assignSt
 void generateAssemblyForExprStmt(node_st **head, node_st **tail, node_st *exprStmt)
 {
     pop = true;
-    printf("herer\n");
     generateAssemblyForExpr(head, tail, EXPRSTMT_EXPR(exprStmt));
 }
 
@@ -1027,7 +1107,7 @@ void FundefDefAssembly(node_st **head, node_st **tail, node_st *fundef)
     if (FUNDEF_INDEX(fundef) > -1)
     {
 
-        sprintf(str, "_fun%d_%s:", FUNDEF_INDEX(fundef), FUNDEF_NAME(fundef));
+        sprintf(str, "_fun%d%s:", FUNDEF_INDEX(fundef), FUNDEF_SCOPENAME(fundef));
         assembly = ASTassembly(strdup(str), strdup(""));
     }
     else if (FUNDEF_INDEX(fundef) == -1)

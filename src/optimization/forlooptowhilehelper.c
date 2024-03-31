@@ -28,10 +28,7 @@ void insertNewShit(node_st **head, node_st **varDeclHead, node_st *node)
     }
 
     node_st *varlet = ASTvarlet(NULL, strdup(FOR_VAR(forNode)));
-    // printf("varlet name: %s\n", VARLET_NAME(varlet));
-    // VARLET_SYMBOLENTRY(varlet) = ASTsymbolentry(NULL, strdup(FOR_VAR(forNode)), CT_int, NODE_BLINE(node), -1, NT_VARLET, 0, NULL);
-    // SYMBOLENTRY_INDEX(VARLET_SYMBOLENTRY(varlet)) = count;
-    // SYMBOLENTRY_GLOBAL(VARLET_SYMBOLENTRY(varlet)) = false;
+
     VARLET_INDEX(varlet) = count;
 
     VARLET_TYPE(varlet) = CT_int;

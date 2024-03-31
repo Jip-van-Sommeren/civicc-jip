@@ -52,11 +52,39 @@ bool checkDecl(struct data_st *data, char *name)
     }
     return false;
 }
+char *makeScopeName(struct data_st *data, char *name)
+{
+    char *str = malloc(256 * sizeof(char));
+    if (!str)
+        return NULL; // Allocation check
+
+    // Initialize the string to be empty
+    str[0] = '\0';
+
+    for (int i = 0; i < data->scopeStack->top + 1; ++i)
+    {
+        Scope *currentScope = &(data->scopeStack->scopes[i]);
+        // Append the current scope name with an underscore as needed
+        // Check if it's not the first scope name being appended to avoid leading underscores
+        if (data->scopeStack->top != 0 && i != 0)
+        {
+            strcat(str, "_");
+            strcat(str, currentScope->name);
+        }
+    }
+    if (name != NULL)
+    {
+        strcat(str, "_");
+        strcat(str, name);
+    }
+
+    return str;
+}
 
 /**
  * @fn insertSymbol
  */
-void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, int dimsCount, node_st *params, int index, bool externB, bool global)
+void insertSymbol(struct data_st *data, char *name, enum Type type, int declaredAtLine, int nodetype, node_st *dims, int dimsCount, node_st *params, int index, bool externB, bool global, char *scopeName)
 {
     if (!data || data->scopeStack->top < 0)
     {
@@ -66,8 +94,7 @@ void insertSymbol(struct data_st *data, char *name, enum Type type, int declared
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     htable_st *currentSymbolTable = currentScope->symbolTable;
 
-    node_st *newentry = ASTsymbolentry(dims, strdup(name), type, declaredAtLine, currentScope->level, nodetype, dimsCount, strdup(currentScope->name));
-
+    node_st *newentry = ASTsymbolentry(dims, strdup(name), type, declaredAtLine, currentScope->level, nodetype, dimsCount, strdup(scopeName));
     if (params != NULL)
     {
         SYMBOLENTRY_PARAMS(newentry) = params;
@@ -292,7 +319,7 @@ node_st *STvardecl(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
     node_st *dims = NULL;
-
+    char *scopeName = makeScopeName(data, NULL);
     if (VARDECL_DIMS(node) != NULL)
     {
         // we need to make a new node because it symbol entry child
@@ -303,23 +330,26 @@ node_st *STvardecl(node_st *node)
     // Check if the variable is already declared
     if (!checkDecl(data, identifier))
     {
+
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false, false);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false, false, scopeName);
         vardeclIndex++;
     }
+    free(scopeName);
+
     TRAVchildren(node);
     return node;
 }
 
-void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *identifier, int declaredAtLine, node_st *params, int index)
+void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *identifier, int declaredAtLine, node_st *params, int index, char *scopeName)
 {
     SYMBOLENTRY_TYPE(entry) = type;
     SYMBOLENTRY_DECLAREDATLINE(entry) = declaredAtLine;
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     SYMBOLENTRY_SCOPELEVEL(entry) = currentScope->level;
-    SYMBOLENTRY_SCOPENAME(entry) = strdup(identifier);
     SYMBOLENTRY_PARAMS(entry) = params;
     SYMBOLENTRY_INDEX(entry) = index;
+    SYMBOLENTRY_SCOPENAME(entry) = strdup(scopeName);
     HTinsert(data->scopeStack->scopes[data->scopeStack->top].symbolTable, identifier, entry);
     HTremove(data->unresolvedFuncall, identifier);
     return;
@@ -340,31 +370,6 @@ void resolveGlobDef(struct data_st *data, node_st *unresolvedEntry, enum Type ty
     HTremove(data->unresolvedFuncall, identifier);
 }
 
-char *makeScopeName(struct data_st *data, char *name)
-{
-    char *str = malloc(256 * sizeof(char));
-    if (!str)
-        return NULL; // Allocation check
-
-    // Initialize the string to be empty
-    str[0] = '\0';
-
-    for (int i = 0; i < data->scopeStack->top + 1; ++i)
-    {
-        Scope *currentScope = &(data->scopeStack->scopes[i]);
-        // Append the current scope name with an underscore as needed
-        // Check if it's not the first scope name being appended to avoid leading underscores
-        if (data->scopeStack->top != 0 && i != 0)
-        {
-            strcat(str, "_");
-            strcat(str, currentScope->name);
-        }
-    }
-    strcat(str, "_");
-    strcat(str, name);
-
-    return str;
-}
 /**
  * @fn STfundef
  */
@@ -402,12 +407,12 @@ node_st *STfundef(node_st *node)
     if (unresolvedEntry != NULL)
     {
 
-        resolveFuncall(data, unresolvedEntry, type, identifier, declaredAtLine, params, index);
+        resolveFuncall(data, unresolvedEntry, type, identifier, declaredAtLine, params, index, FUNDEF_SCOPENAME(node));
     }
     else if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL, 0, params, index, false, global);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, NULL, 0, params, index, false, global, FUNDEF_SCOPENAME(node));
     }
     // sert the function symbol into the symbol table with the current scope level
     //  Increment the scope level for the function body
@@ -433,6 +438,8 @@ node_st *STfor(node_st *node)
     enum Type type = CT_int;
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NT_VAR;
+
+    char *scopeName = makeScopeName(data, NULL);
     // check if initializer
     char str[10];
 
@@ -446,7 +453,7 @@ node_st *STfor(node_st *node)
 
     if (newVar)
     {
-        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL, vardeclIndex, false, false);
+        insertSymbol(data, str, type, declaredAtLine, nodetype, NULL, 0, NULL, vardeclIndex, false, false, scopeName);
         vardeclIndex++;
         MEMfree(FOR_VAR(node));
         FOR_VAR(node) = strdup(str);
@@ -456,6 +463,7 @@ node_st *STfor(node_st *node)
         node_st *entry = findLink(data, identifier);
         FOR_VARINDEX(node) = SYMBOLENTRY_INDEX(entry);
     }
+    free(scopeName);
 
     // set new name as var name
 
@@ -480,6 +488,9 @@ node_st *STparam(node_st *node)
     int declaredAtLine = NODE_BLINE(node);
     int nodetype = NODE_TYPE(node);
     node_st *dims = NULL;
+
+    char *scopeName = makeScopeName(data, NULL);
+
     if (PARAM_DIMS(node) != NULL)
     {
         dims = idsToExprs(PARAM_DIMS(node));
@@ -488,20 +499,19 @@ node_st *STparam(node_st *node)
     while (paramDims != NULL)
     {
         char *id = IDS_NAME(paramDims);
-        insertSymbol(data, id, CT_int, declaredAtLine, NT_VAR, NULL, 0, NULL, vardeclIndex, false, false);
+        insertSymbol(data, id, CT_int, declaredAtLine, NT_VAR, NULL, 0, NULL, vardeclIndex, false, false, scopeName);
         vardeclIndex++;
         paramDims = IDS_NEXT(paramDims);
     }
-
     int dimsCount = checkParamDimension(PARAM_DIMS(node));
     // in case of global scope mostly in case of globdecl param insertion not needed otherwise we might get collission
     // since params of fundefs in global scope should be at scope level 1 this should be fine
     if (data->scopeStack->top > 0)
     {
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false, false);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, vardeclIndex, false, false, scopeName);
         vardeclIndex++;
     }
-
+    free(scopeName);
     // Only insert the symbol if it was not already declared
     return node;
 }
@@ -520,6 +530,7 @@ node_st *STglobdecl(node_st *node)
     int nodetype = NODE_TYPE(node);
     int dimsCount = checkParamDimension(GLOBDECL_DIMS(node));
     node_st *dims = NULL;
+    char *scopeName = makeScopeName(data, NULL);
 
     int globdeclIndex = 0;
     if (GLOBDECL_ISVAR(node))
@@ -541,8 +552,9 @@ node_st *STglobdecl(node_st *node)
     {
         // Only insert the symbol if it was not already declared
 
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, GLOBDECL_PARAMS(node), globdeclIndex, true, true);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, GLOBDECL_PARAMS(node), globdeclIndex, true, true, scopeName);
     }
+    free(scopeName);
     TRAVchildren(node);
     return node;
 }
@@ -553,6 +565,7 @@ node_st *STglobdecl(node_st *node)
 node_st *STglobdef(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
+    char *scopeName = makeScopeName(data, NULL);
 
     // Extract the variable's name, type, and declaration line number
     char *identifier = GLOBDEF_NAME(node);
@@ -580,9 +593,9 @@ node_st *STglobdef(node_st *node)
     else if (!checkDecl(data, identifier))
     {
         // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, globdefIndex, false, true);
+        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, globdefIndex, false, true, scopeName);
     }
-
+    free(scopeName);
     globdefIndex++;
     TRAVchildren(node);
     return node;
@@ -595,6 +608,8 @@ node_st *STvar(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VAR_NAME(node);
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    VAR_CURRENTSCOPE(node) = currentScope->level;
     printf("vardecl index %d, %s var name line number %d, declared at line", vardeclIndex, VAR_NAME(node), NODE_BLINE(node));
     node_st *entry = findLink(data, name);
     if (entry == NULL && inForLoop)
@@ -619,6 +634,7 @@ node_st *STvar(node_st *node)
             entry = findGlobLink(data, name);
             if (!entry)
             {
+                printf("here\n");
                 undeclaredVar(name, NODE_BLINE(node));
             }
         }
@@ -642,6 +658,8 @@ node_st *STvarlet(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VARLET_NAME(node);
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    VARLET_CURRENTSCOPE(node) = currentScope->level;
     node_st *entry = findLink(data, name);
     if (entry != NULL)
     {
@@ -673,6 +691,8 @@ node_st *STfuncall(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = FUNCALL_NAME(node);
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    FUNCALL_CURRENTSCOPE(node) = currentScope->level;
     if (strcmp(name, "__allocate") == 0)
     {
         return node;

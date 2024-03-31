@@ -118,7 +118,6 @@ node_st *CONSTTnum(node_st *node)
     if (val != 0 && val != 1 && val != -1 && entry == NULL)
     {
         // Insert using the allocated key. Assuming `node` is correctly typed to be stored as a value.
-        printf("%d %d\n", NUM_VAL(node), data->index);
         node_st *constantentry = ASTconstantentry(node, data->index);
         appendConstantTable(&constTab, &tail, constantentry);
         HTinsert(data->intTable, key, constantentry);

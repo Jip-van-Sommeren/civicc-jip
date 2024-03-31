@@ -24,6 +24,7 @@ void VDRATfini()
 
 node_st *VDRATfunbody(node_st *node)
 {
+    TRAVchildren(node);
     // Placeholder for the first new assignment statement.
     node_st *newAssignStmts = NULL;
     node_st *newAssignStmtsTail = NULL;
