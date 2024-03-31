@@ -1,3 +1,12 @@
+/**
+ * @file makeassemblyhelper.c
+ * @brief Provides utility functions for generating assembly.
+ *
+ * Contains all functions to generate the assembly nodes.
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"

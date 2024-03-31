@@ -4,27 +4,7 @@
  *
  * This file contains functions for managing the symbol table within a compiler context.
  * It handles the insertion and retrieval of symbols (variables, functions, parameters)
- * across different scopes including global, local, and block scopes. The symbol table
- * is crucial for semantic analysis, ensuring that variables and functions are declared
- * before use, preventing duplicate declarations, and maintaining scope-level information
- * for name resolution during code generation.
- *
- * Features include:
- * - Scope management, allowing symbols to be organized according to their lexical scope.
- * - Handling of function calls, including resolution of function names and parameters.
- * - Management of variables and parameters, including their types, dimensions, and initializations.
- * - Detection and reporting of undeclared variables or duplicate declarations.
- * - Support for special symbols such as loop variables and handling external symbols.
- *
- * Usage involves initializing the symbol table at the beginning of compilation,
- * pushing and popping scopes as needed during AST traversal, and finally cleaning
- * up the symbol table structure upon completion of the compilation process.
- *
- * Note:
- * - The implementation assumes a structured AST traversal where scopes are explicitly
- *   managed according to the program's structure.
- * - Error handling is done through direct reporting within the functions, halting
- *   compilation on critical errors.
+ * across different scopes including global, local, and block scopes.
  *
  * @author Jip van Sommeren 14822857
  * @date 31-03-24

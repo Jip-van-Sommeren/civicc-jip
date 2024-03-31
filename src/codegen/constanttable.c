@@ -1,3 +1,12 @@
+/**
+ * @file constanttable.c
+ * @brief Generate constanttable.
+ *
+ * Generate the constanttable nodes.
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"
@@ -65,30 +74,6 @@ void CONSTTfini()
     HTdelete(data->intTable);
     return;
 }
-
-// void makeConstantTable(node_st **head, node_st **tail, struct data_constt *data)
-// {
-//     htable_iter_st *iterInt = HTiterate(data->intTable);
-//     htable_iter_st *iterFloat = HTiterate(data->floatTable);
-
-//     while (iterInt != NULL)
-//     {
-
-//         node_st *entry = HTiterValue(iterInt);
-
-//         appendConstantTable(head, tail, entry);
-//         iterInt = HTiterateNext(iterInt);
-//     }
-//     while (iterFloat != NULL)
-//     {
-
-//         node_st *entry = HTiterValue(iterFloat);
-//         appendConstantTable(head, tail, entry);
-//         iterFloat = HTiterateNext(iterFloat);
-//     }
-
-//     return;
-// }
 
 node_st *CONSTTprogram(node_st *node)
 {

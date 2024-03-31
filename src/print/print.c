@@ -1,10 +1,9 @@
 /**
- * @file
+ * @file print.c
+ * @brief Print nodes.
  *
- * This file contains the code for the Print traversal.
- * The traversal has the uid: PRT
- *
- *
+ * @author Jip van Sommeren
+ * @date 31-03-24
  */
 
 #include <stdio.h>

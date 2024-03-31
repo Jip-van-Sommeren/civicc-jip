@@ -1,3 +1,12 @@
+/**
+ * @file makeassemblycombined.c
+ * @brief Generate assembly.
+ *
+ * Generate the assembly nodes.
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"

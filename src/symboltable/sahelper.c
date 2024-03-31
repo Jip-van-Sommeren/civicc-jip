@@ -4,22 +4,7 @@
  *
  * This file contains functions for determining result types of monadic and dyadic operations, and
  * for checking and resolving types for various AST (Abstract Syntax Tree) nodes like variable
- * declarations, function calls, binary and unary operations, and casts. It also includes utility
- * functions for managing and manipulating symbol tables and scope levels, crucial for resolving
- * identifiers and ensuring type safety and scope correctness.
- *
- * Functions included:
- * - `getMonOpResultType()` and `getBinOpResultType()`: Determine the result type based on operand types.
- * - `getType()`: Retrieves the type of a given AST node, fundamental for type checking.
- * - `getName()`: Obtains a human-readable name or identifier from an AST node for error reporting and debugging.
- * - `moveLastToFront()`: Modifies a linked list of declarations to move the last element to the front.
- *
- * Error handling functions report type mismatches, incorrect function calls, or invalid operations,
- * ensuring meaningful feedback to the programmer about potential issues in the source code.
- *
- * The file leverages AST node definitions, type enumeration, and utility functions for converting
- * types and operation codes to strings, playing a critical role in semantic analysis phase of compiling,
- * enforcing type safety, resolving identifiers, and preparing the code for optimization and code generation.
+ * declarations, function calls, binary and unary operations, and casts.
  *
  * @author Jip van Sommeren
  * @date 31-03-24

@@ -1,3 +1,12 @@
+/**
+ * @file booldisjunctionconjunction.c
+ * @brief Generate ternary nodes for bool disjunctions.
+ *
+ * Generate the ternary nodes.
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"
@@ -10,16 +19,6 @@
 #include "palm/dbug.h"
 #include "palm/ctinfo.h"
 #include "vartypetostring.h"
-
-void DBCinit()
-{
-    return;
-}
-
-void DBCfini()
-{
-    return;
-}
 
 static int count = 0;
 

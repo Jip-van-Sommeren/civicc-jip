@@ -3,27 +3,7 @@
  * @brief Semantic Analysis and Error Checking for Compiler Construction.
  *
  * This file contains a collection of functions designed for semantic analysis
- * and error reporting during the compilation process. Each function is tailored
- * to handle specific AST nodes, such as function calls, binary operations,
- * variable declarations, and more, ensuring that the code conforms to the
- * language's semantic rules.
- *
- * Key functionalities include:
- * - Type checking: Ensuring expressions, variables, and return statements have
- *   appropriate types.
- * - Parameter and argument validation: Verifying the correct number and types
- *   of function call arguments against its definition.
- * - Array dimension checks: Ensuring array initializations match their declared dimensions.
- * - Error reporting: Detailed error messages for type mismatches, invalid operations,
- *   undeclared variables, and other semantic violations.
- *
- * Each function traverses parts of the AST relevant to its semantic rule, applying
- * checks and reporting errors through a common error handling mechanism. This process
- * is crucial for identifying issues early in the compilation process, before code generation.
- *
- * Note: This file relies on external utilities for type descriptions, AST node handling,
- * and error reporting. It is part of a larger compiler construction project that includes
- * lexical analysis, syntax analysis, semantic analysis, and code generation phases.
+ * and error reporting during the compilation process.
  *
  * @author Jip van Sommeren
  * @date 31-03-24
