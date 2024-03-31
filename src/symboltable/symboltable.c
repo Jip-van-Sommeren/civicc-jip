@@ -1,3 +1,34 @@
+/**
+ * @file symboltable.c
+ * @brief Symbol Table Management for the Compiler.
+ *
+ * This file contains functions for managing the symbol table within a compiler context.
+ * It handles the insertion and retrieval of symbols (variables, functions, parameters)
+ * across different scopes including global, local, and block scopes. The symbol table
+ * is crucial for semantic analysis, ensuring that variables and functions are declared
+ * before use, preventing duplicate declarations, and maintaining scope-level information
+ * for name resolution during code generation.
+ *
+ * Features include:
+ * - Scope management, allowing symbols to be organized according to their lexical scope.
+ * - Handling of function calls, including resolution of function names and parameters.
+ * - Management of variables and parameters, including their types, dimensions, and initializations.
+ * - Detection and reporting of undeclared variables or duplicate declarations.
+ * - Support for special symbols such as loop variables and handling external symbols.
+ *
+ * Usage involves initializing the symbol table at the beginning of compilation,
+ * pushing and popping scopes as needed during AST traversal, and finally cleaning
+ * up the symbol table structure upon completion of the compilation process.
+ *
+ * Note:
+ * - The implementation assumes a structured AST traversal where scopes are explicitly
+ *   managed according to the program's structure.
+ * - Error handling is done through direct reporting within the functions, halting
+ *   compilation on critical errors.
+ *
+ * @author Jip van Sommeren 14822857
+ * @date 31-03-24
+ */
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"
@@ -52,6 +83,10 @@ bool checkDecl(struct data_st *data, char *name)
     }
     return false;
 }
+
+/**
+ * @fn makeScopeName
+ */
 char *makeScopeName(struct data_st *data, char *name)
 {
     char *str = malloc(256 * sizeof(char));
@@ -112,6 +147,9 @@ void insertSymbol(struct data_st *data, char *name, enum Type type, int declared
     return;
 }
 
+/**
+ * @fn findLink
+ */
 node_st *findLink(struct data_st *data, char *name)
 {
     for (int i = data->scopeStack->top; i > -1; --i)
@@ -125,18 +163,9 @@ node_st *findLink(struct data_st *data, char *name)
     return NULL;
 }
 
-node_st *findLink1D(struct data_st *data, char *name)
-{
-
-    node_st *entry = HTlookup(data->scopeStack->scopes[data->scopeStack->top].symbolTable, name);
-    if (entry != NULL)
-    {
-        return entry;
-    }
-
-    return NULL;
-}
-
+/**
+ * @fn findGlobLink
+ */
 node_st *findGlobLink(struct data_st *data, char *name)
 {
 
@@ -152,6 +181,9 @@ node_st *findGlobLink(struct data_st *data, char *name)
     return NULL;
 }
 
+/**
+ * @fn findReturnType
+ */
 enum Type findReturnType(struct data_st *data)
 {
     return data->scopeStack->scopes[data->scopeStack->top].type;
@@ -220,6 +252,23 @@ int ST_currentScopeLevel(struct data_st *data)
         return data->scopeStack->scopes[data->scopeStack->top].level;
     }
     return -1;
+}
+
+/**
+ * @fn resolveFuncall
+ */
+void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *identifier, int declaredAtLine, node_st *params, int index, char *scopeName)
+{
+    SYMBOLENTRY_TYPE(entry) = type;
+    SYMBOLENTRY_DECLAREDATLINE(entry) = declaredAtLine;
+    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
+    SYMBOLENTRY_SCOPELEVEL(entry) = currentScope->level;
+    SYMBOLENTRY_PARAMS(entry) = params;
+    SYMBOLENTRY_INDEX(entry) = index;
+    SYMBOLENTRY_SCOPENAME(entry) = strdup(scopeName);
+    HTinsert(data->scopeStack->scopes[data->scopeStack->top].symbolTable, identifier, entry);
+    HTremove(data->unresolvedFuncall, identifier);
+    return;
 }
 
 /**
@@ -340,35 +389,9 @@ node_st *STvardecl(node_st *node)
     TRAVchildren(node);
     return node;
 }
-
-void resolveFuncall(struct data_st *data, node_st *entry, enum Type type, char *identifier, int declaredAtLine, node_st *params, int index, char *scopeName)
-{
-    SYMBOLENTRY_TYPE(entry) = type;
-    SYMBOLENTRY_DECLAREDATLINE(entry) = declaredAtLine;
-    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
-    SYMBOLENTRY_SCOPELEVEL(entry) = currentScope->level;
-    SYMBOLENTRY_PARAMS(entry) = params;
-    SYMBOLENTRY_INDEX(entry) = index;
-    SYMBOLENTRY_SCOPENAME(entry) = strdup(scopeName);
-    HTinsert(data->scopeStack->scopes[data->scopeStack->top].symbolTable, identifier, entry);
-    HTremove(data->unresolvedFuncall, identifier);
-    return;
-}
-
-void resolveGlobDef(struct data_st *data, node_st *unresolvedEntry, enum Type type, char *identifier, int declaredAtLine, int index, node_st *dims, int dimsCount, bool glob)
-{
-    SYMBOLENTRY_TYPE(unresolvedEntry) = type;
-    SYMBOLENTRY_DECLAREDATLINE(unresolvedEntry) = declaredAtLine;
-    Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
-    SYMBOLENTRY_SCOPELEVEL(unresolvedEntry) = currentScope->level;
-    SYMBOLENTRY_SCOPENAME(unresolvedEntry) = strdup(identifier);
-    SYMBOLENTRY_INDEX(unresolvedEntry) = index;
-    SYMBOLENTRY_DIMS(unresolvedEntry) = dims;
-    SYMBOLENTRY_DIMSCOUNT(unresolvedEntry) = dimsCount;
-    SYMBOLENTRY_GLOBAL(unresolvedEntry) = glob;
-    HTinsert(data->scopeStack->scopes[data->scopeStack->top].symbolTable, identifier, unresolvedEntry);
-    HTremove(data->unresolvedFuncall, identifier);
-}
+/**
+ * @fn STresolvefuncall
+ */
 
 /**
  * @fn STfundef
@@ -565,53 +588,52 @@ node_st *STglobdecl(node_st *node)
 node_st *STglobdef(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
-    char *scopeName = makeScopeName(data, NULL);
-
-    // Extract the variable's name, type, and declaration line number
     char *identifier = GLOBDEF_NAME(node);
     enum Type type = GLOBDEF_TYPE(node);
-    // char *typestr = VarTypeToString(type);
     int declaredAtLine = NODE_BLINE(node);
-    int nodetype = NODE_TYPE(node);
-    node_st *dims = NULL;
-    node_st *unresolvedEntry = HTlookup(data->unresolvedFuncall, identifier);
-    GLOBDEF_INDEX(node) = globdefIndex;
+    int dimsCount = checkExprDimension(GLOBDEF_DIMS(node)); // Calculate dimensions count if any
+    GLOBDEF_INDEX(node) = globdefIndex;                     // Update the global definition index for the node
 
-    if (GLOBDEF_DIMS(node) != NULL)
-    {
-        // we need to make a new node because it symbol entry child
-        dims = exprsToExprs(GLOBDEF_DIMS(node));
-    }
-    int dimsCount = checkExprDimension(GLOBDEF_DIMS(node));
+    // Generate scope name, might be NULL if not applicable
+    char *scopeName = makeScopeName(data, NULL);
 
-    printf(" globdef index %d\n", globdefIndex);
-    if (unresolvedEntry != NULL)
+    // Check if the global definition is already declared
+    if (!checkDecl(data, identifier))
     {
+        // Handle dimensions if present
+        node_st *dims = NULL;
+        if (GLOBDEF_DIMS(node) != NULL)
+        {
+            dims = exprsToExprs(GLOBDEF_DIMS(node)); // Clone or transform dimensions expression if necessary
+        }
 
-        resolveGlobDef(data, unresolvedEntry, type, identifier, declaredAtLine, globdefIndex, dims, dimsCount, true);
+        // Insert the global symbol with its properties
+        insertSymbol(data, identifier, type, declaredAtLine, NODE_TYPE(node), dims, dimsCount, NULL, globdefIndex, false, true, scopeName);
     }
-    else if (!checkDecl(data, identifier))
-    {
-        // Only insert the symbol if it was not already declared
-        insertSymbol(data, identifier, type, declaredAtLine, nodetype, dims, dimsCount, NULL, globdefIndex, false, true, scopeName);
-    }
-    free(scopeName);
-    globdefIndex++;
-    TRAVchildren(node);
+
+    // Cleanup and traverse children
+    free(scopeName);    // Free the scope name if allocated
+    globdefIndex++;     // Increment global definition index for the next use
+    TRAVchildren(node); // Continue traversal to child nodes
+
     return node;
 }
 
 /**
- * @fn STglobdef
+ * @fn STvar
  */
 node_st *STvar(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = VAR_NAME(node);
+    // Always fetch the current scope for completeness, although it's not directly used below.
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     VAR_CURRENTSCOPE(node) = currentScope->level;
-    printf("vardecl index %d, %s var name line number %d, declared at line", vardeclIndex, VAR_NAME(node), NODE_BLINE(node));
+
+    // Attempt to find the variable in the symbol table.
     node_st *entry = findLink(data, name);
+
+    // Handle case where the variable might be defined within a for loop.
     if (entry == NULL && inForLoop)
     {
         char str2[10];
@@ -619,40 +641,45 @@ node_st *STvar(node_st *node)
         entry = findLink(data, str2);
         if (entry != NULL)
         {
-            VAR_SYMBOLENTRY(node) = entry;
-            VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
+            // If a modified name is found, update the VAR node accordingly.
             MEMfree(VAR_NAME(node));
             VAR_NAME(node) = strdup(str2);
-            VAR_INDEX(node) = SYMBOLENTRY_INDEX(entry);
         }
     }
-    else if (entry != NULL)
+
+    if (entry != NULL)
     {
-        entry = findLink(data, name);
+        // Check if the variable is declared after its usage.
         if ((int)NODE_BLINE(node) <= SYMBOLENTRY_DECLAREDATLINE(entry))
         {
             entry = findGlobLink(data, name);
-            if (!entry)
-            {
-                printf("here\n");
-                undeclaredVar(name, NODE_BLINE(node));
-            }
         }
-        VAR_SYMBOLENTRY(node) = entry;
-        printf("%d\n", SYMBOLENTRY_DECLAREDATLINE(entry));
-        VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
-        VAR_INDEX(node) = SYMBOLENTRY_INDEX(entry);
+
+        // Final check to handle undeclared variables.
+        if (!entry)
+        {
+            undeclaredVar(name, NODE_BLINE(node));
+        }
+        else
+        {
+            // Update VAR node with details from the found symbol entry.
+            VAR_SYMBOLENTRY(node) = entry;
+            VAR_TYPE(node) = SYMBOLENTRY_TYPE(entry);
+            VAR_INDEX(node) = SYMBOLENTRY_INDEX(entry);
+        }
     }
     else
     {
         undeclaredVar(name, NODE_BLINE(node));
     }
+
+    // Continue traversal for the children of this node.
     TRAVchildren(node);
     return node;
 }
 
 /**
- * @fn STglobdef
+ * @fn STvarlet
  */
 node_st *STvarlet(node_st *node)
 {
@@ -669,66 +696,65 @@ node_st *STvarlet(node_st *node)
     }
     else
     {
-        if (HTlookup(data->unresolvedFuncall, name) == NULL)
-        {
-            node_st *entry = ASTsymbolentry(NULL, strdup(name), -1, -1, -1, -1, -1, NULL);
-            VARLET_SYMBOLENTRY(node) = entry;
-            HTinsert(data->unresolvedFuncall, name, entry);
-        }
-        else
-        {
-            VARLET_SYMBOLENTRY(node) = HTlookup(data->unresolvedFuncall, name);
-        }
+
+        undeclaredVar(name, NODE_BLINE(node));
     }
     TRAVchildren(node);
     return node;
 }
 
 /**
- * @fn STglobdef
+ * @fn STfuncall
  */
 node_st *STfuncall(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();
     char *name = FUNCALL_NAME(node);
+
+    // Set the current scope level for the function call.
     Scope *currentScope = &(data->scopeStack->scopes[data->scopeStack->top]);
     FUNCALL_CURRENTSCOPE(node) = currentScope->level;
+
+    // Special case for "__allocate" function call.
     if (strcmp(name, "__allocate") == 0)
     {
         return node;
     }
+
+    // Attempt to find the function in the current symbol table.
     node_st *entry = findLink(data, name);
-    if (entry != NULL)
+
+    if (entry)
     {
-
+        // Function found, link to the symbol entry.
         FUNCALL_SYMBOLENTRY(node) = entry;
-
         FUNCALL_TYPE(node) = SYMBOLENTRY_TYPE(entry);
         FUNCALL_INDEX(node) = SYMBOLENTRY_INDEX(entry);
         FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
     }
-    // Check if funcall is not already in unresolved calls, if not add to unresolved calls
-    // else link the symbolentry node.
     else
     {
-        if (HTlookup(data->unresolvedFuncall, name) == NULL)
+        // Function not found, check or add to unresolved function calls.
+        entry = HTlookup(data->unresolvedFuncall, name);
+        if (!entry)
         {
-            node_st *entry = ASTsymbolentry(NULL, strdup(name), -1, -1, -1, -1, -1, NULL);
-            FUNCALL_SYMBOLENTRY(node) = entry;
-            FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
+            // Add new entry to unresolved function calls.
+            entry = ASTsymbolentry(NULL, strdup(name), -1, -1, -1, -1, -1, NULL);
             HTinsert(data->unresolvedFuncall, name, entry);
         }
-        else
-        {
-            FUNCALL_SYMBOLENTRY(node) = HTlookup(data->unresolvedFuncall, name);
-            FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
-        }
+        // Link the function call to the (possibly new) unresolved entry.
+        FUNCALL_SYMBOLENTRY(node) = entry;
+        FUNCALL_SCOPE(node) = ST_currentScopeLevel(data);
     }
 
+    // Traverse children nodes of the function call.
     TRAVchildren(node);
     return node;
 }
 
+/**
+ * @fn STreturn
+ */
 node_st *STreturn(node_st *node)
 {
     struct data_st *data = DATA_ST_GET();

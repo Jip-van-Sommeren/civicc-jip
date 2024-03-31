@@ -37,6 +37,10 @@ phase SemanticAnalysis {
             nodes = {Cast, GlobDef, VarDecl, FunCall, Return, Binop, Monop, Assign}
 
         };
+        traversal PutInitAtStart {
+            uid = PAS,
+            nodes = {Decls}
+        };
 }
 };
 

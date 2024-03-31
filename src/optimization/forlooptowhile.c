@@ -1,3 +1,14 @@
+/**
+ * @file forlooptowhileloop.c
+ * @brief For loop to While loop generation.
+ *
+ * This file contains the initital steps for the conversion of for loop to
+ * while loop, it sets the initializers for the loop iterators.
+ *
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"

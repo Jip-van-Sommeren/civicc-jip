@@ -1,3 +1,34 @@
+/**
+ * @file semanticanalysis.c
+ * @brief Semantic Analysis and Error Checking for Compiler Construction.
+ *
+ * This file contains a collection of functions designed for semantic analysis
+ * and error reporting during the compilation process. Each function is tailored
+ * to handle specific AST nodes, such as function calls, binary operations,
+ * variable declarations, and more, ensuring that the code conforms to the
+ * language's semantic rules.
+ *
+ * Key functionalities include:
+ * - Type checking: Ensuring expressions, variables, and return statements have
+ *   appropriate types.
+ * - Parameter and argument validation: Verifying the correct number and types
+ *   of function call arguments against its definition.
+ * - Array dimension checks: Ensuring array initializations match their declared dimensions.
+ * - Error reporting: Detailed error messages for type mismatches, invalid operations,
+ *   undeclared variables, and other semantic violations.
+ *
+ * Each function traverses parts of the AST relevant to its semantic rule, applying
+ * checks and reporting errors through a common error handling mechanism. This process
+ * is crucial for identifying issues early in the compilation process, before code generation.
+ *
+ * Note: This file relies on external utilities for type descriptions, AST node handling,
+ * and error reporting. It is part of a larger compiler construction project that includes
+ * lexical analysis, syntax analysis, semantic analysis, and code generation phases.
+ *
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "ccn/ccn.h"
 #include "ccngen/ast.h"
@@ -216,13 +247,6 @@ bool checkArrayDimensions(node_st *dims, node_st *init, enum Type type)
     // Step 2: Check the initializer against expected dimensions.
     return checkInitializer(init, expectedDims, 0, dimCount, type);
 }
-void checkIntegerRange(int value)
-{
-    if (value < INT32_MIN || value > INT32_MAX)
-    {
-        intOutOfRangeError();
-    }
-}
 
 void SAinit()
 {
@@ -255,12 +279,7 @@ node_st *SAglobdef(node_st *node)
     node_st *init = GLOBDEF_INIT(node);
 
     node_st *dims = GLOBDEF_DIMS(node);
-    if (init != NULL && NODE_TYPE(init) == NT_NUM)
-    {
 
-        int num = NUM_VAL(init);
-        checkIntegerRange(num);
-    }
     if (dims == NULL && init != NULL && (GLOBDEF_TYPE(node) != getType(init)))
     {
         vardeclTypeError(init, node);
@@ -373,11 +392,7 @@ node_st *SAvardecl(node_st *node)
     node_st *init = VARDECL_INIT(node);
 
     node_st *dims = VARDECL_DIMS(node);
-    if (init != NULL && NODE_TYPE(init) == NT_NUM)
-    {
-        long long num = NUM_VAL(init);
-        checkIntegerRange(num);
-    }
+
     if (dims == NULL && init != NULL && (VARDECL_TYPE(node) != getType(init)))
     {
         vardeclTypeError(init, node);

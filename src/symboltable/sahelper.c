@@ -1,3 +1,30 @@
+/**
+ * @file sahelper.c
+ * @brief Provides utility functions for semantic analysis and type resolution in the compiler's front-end processing.
+ *
+ * This file contains functions for determining result types of monadic and dyadic operations, and
+ * for checking and resolving types for various AST (Abstract Syntax Tree) nodes like variable
+ * declarations, function calls, binary and unary operations, and casts. It also includes utility
+ * functions for managing and manipulating symbol tables and scope levels, crucial for resolving
+ * identifiers and ensuring type safety and scope correctness.
+ *
+ * Functions included:
+ * - `getMonOpResultType()` and `getBinOpResultType()`: Determine the result type based on operand types.
+ * - `getType()`: Retrieves the type of a given AST node, fundamental for type checking.
+ * - `getName()`: Obtains a human-readable name or identifier from an AST node for error reporting and debugging.
+ * - `moveLastToFront()`: Modifies a linked list of declarations to move the last element to the front.
+ *
+ * Error handling functions report type mismatches, incorrect function calls, or invalid operations,
+ * ensuring meaningful feedback to the programmer about potential issues in the source code.
+ *
+ * The file leverages AST node definitions, type enumeration, and utility functions for converting
+ * types and operation codes to strings, playing a critical role in semantic analysis phase of compiling,
+ * enforcing type safety, resolving identifiers, and preparing the code for optimization and code generation.
+ *
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "ccngen/ast.h"
 #include "ccngen/enum.h"
 #include "stdio.h"
@@ -198,4 +225,32 @@ char *getName(node_st *node)
         break;
     }
     return tmp;
+}
+
+void moveLastToFront(node_st **head)
+{
+    // If the list is empty or contains only one node, there's nothing to do.
+    if (*head == NULL || DECLS_NEXT(*head) == NULL)
+    {
+        return;
+    }
+
+    node_st *last = *head;
+    node_st *secondLast = NULL;
+
+    // Find the second-to-last node and the last node.
+    while (DECLS_NEXT(last) != NULL)
+    {
+        secondLast = last;
+        // last = last->next;
+        last = DECLS_NEXT(last);
+    }
+    // only swap if there is an init func
+    if (NODE_TYPE(last) == NT_FUNDEF && strcmp(FUNDEF_NAME(last), "__init") == 0)
+    {
+        DECLS_NEXT(secondLast) = NULL;
+
+        DECLS_NEXT(last) = *head;
+        *head = last;
+    }
 }

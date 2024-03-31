@@ -1,3 +1,14 @@
+/**
+ * @file forlooptowhileloop2.c
+ * @brief For loop to While loop generation.
+ *
+ * This file contains the replacement of for loop to a while loop and
+ * the corresponding steps such as making the update assigns.
+ *
+ * @author Jip van Sommeren
+ * @date 31-03-24
+ */
+
 #include "palm/hash_table.h"
 #include "palm/memory.h"
 #include "ccn/ccn.h"

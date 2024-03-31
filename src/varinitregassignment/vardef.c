@@ -32,7 +32,7 @@ node_st *VDRAprogram(node_st *node)
     node_st *assignStmtsTail = NULL; // Tail of the list.
 
     node_st *decls = PROGRAM_DECLS(node);
-
+    node_st *prev = NULL;
     while (decls != NULL)
     {
         if (NODE_TYPE(DECLS_DECL(decls)) == NT_GLOBDEF)
@@ -54,6 +54,7 @@ node_st *VDRAprogram(node_st *node)
         {
             TRAVopt(DECLS_DECL(decls));
         }
+        prev = decls;
         decls = DECLS_NEXT(decls);
     }
 
@@ -63,7 +64,8 @@ node_st *VDRAprogram(node_st *node)
         node_st *initFunBody = ASTfunbody(NULL, NULL, assignStmts);
         node_st *initFunDef = ASTfundef(initFunBody, NULL, strdup("__init"), CT_void, true);
         // Assume there's a way t
-        insertDeclsAtStart(&PROGRAM_DECLS(node), ASTdecls(initFunDef, NULL));
+        // insertDeclsAtEnd(&PROGRAM_DECLS(node), ASTdecls(initFunDef, NULL));
+        DECLS_NEXT(prev) = ASTdecls(initFunDef, NULL);
     }
 
     return node; // Return the modified AST

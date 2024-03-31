@@ -9,3 +9,4 @@ bool getMonOpResultType(enum MonOpType op, enum Type operandType);
 enum Type getBinOpResultType(enum BinOpType op, enum Type leftType, enum Type rightType);
 enum Type getType(node_st *node);
 char *getName(node_st *node);
+void moveLastToFront(node_st **head);
